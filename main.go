@@ -67,25 +67,42 @@ func main() {
 	// run parser
 	errors, results := parser.Run(log, &cancel, content)
 
+	stats := map[string]int{
+		"errors": 0,
+		"good":   0,
+		"total":  0,
+	}
+
 	for {
 		select {
 		case e := <-errors:
-			log = log.WithOptions(zap.Fields(
+			logger := log.WithOptions(zap.Fields(
 				zap.Error(e.Error),
 				zap.String("fileLoc", *e.FileLoc),
 			))
-			log.Error("received error")
+			logger.Error("received error")
+			stats["errors"] += 1
+			stats["total"] += 1
 
 		case r := <-results:
-			log = log.WithOptions(zap.Fields(
+			logger := log.WithOptions(zap.Fields(
 				zap.String("fileLoc", *r.FileLoc),
 				zap.String("name", r.Name),
 			))
-			log.Info("received result")
+			logger.Info("received result")
 			generator.Write(r, environment, log)
+			stats["good"] += 1
+			stats["total"] += 1
 
 		case <-ctx.Done():
 			log.Info("context is done")
+
+			log.Debug("processing is done. stats",
+				zap.Int("total", stats["total"]),
+				zap.Int("good", stats["good"]),
+				zap.Int("errors", stats["errors"]),
+			)
+
 			generator.Close()
 			os.Exit(0)
 		}

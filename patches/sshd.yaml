@@ -2,7 +2,7 @@ output: /etc/ssh/sshd_config
 mode: append
 commentCharacter: "#"
 executeAfter: 
-  systemctl restart sshd
+  - systemctl restart sshd
 description:
   hardenize SSHD server with prefered ciphers etc.
 body: |

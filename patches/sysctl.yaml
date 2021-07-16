@@ -2,7 +2,7 @@ output: /etc/sysctl.conf
 mode: append
 commentCharacter: "#"
 executeAfter: 
-  sysctl -p
+  - sysctl -p
 description:
   special sysctl.conf kernel tunings. lots of them were collected and tested over the time.
 body: |
