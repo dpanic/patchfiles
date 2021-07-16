@@ -1,7 +1,7 @@
 output: /etc/udev/rules.d/60-scheduler.rules
 mode: overwrite
 commentCharacter: "#"
-executeAfter: 
+commandsAfter: 
   - udevadm control --reload
   - udevadm trigger
 description:

@@ -1,7 +1,7 @@
 output: /etc/modules-load.d/bfq.conf
 mode: overwrite
 commentCharacter: "#"
-executeAfter: 
+commandsAfter: 
   - modprobe bfq
 description:
   load bfq modules

@@ -9,7 +9,7 @@ type Patch struct {
 	Output           string   `yaml:"output"`
 	Mode             string   `yaml:"mode"`
 	Body             string   `yaml:"body"`
-	ExecuteAfter     []string `yaml:"executeAfter"`
+	CommandsAfter    []string `yaml:"commandsAfter"`
 	CommentCharacter string   `yaml:"commentCharacter"`
 	Description      string   `yaml:"description"`
 }

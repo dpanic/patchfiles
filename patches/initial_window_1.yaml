@@ -1,7 +1,7 @@
 output: /etc/rc.local
 mode: overwrite
 commentCharacter: "#"
-executeAfter: 
+commandsAfter: 
   - chmod +x /etc/rc.local
   - systemctl enable rc-local.service
 description:
