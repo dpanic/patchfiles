@@ -1,0 +1,8 @@
+output: /etc/pam.d/common-session-noninteractive
+mode: append
+commentCharacter: "#"
+description:
+  adds pam_limits kernel module to the pam in order to enable it for SSH sessions
+body: |
+  session required pam_limits.so
+

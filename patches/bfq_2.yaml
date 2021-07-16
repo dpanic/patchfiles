@@ -1,0 +1,10 @@
+output: /etc/udev/rules.d/60-scheduler.rules
+mode: overwrite
+commentCharacter: "#"
+executeAfter: 
+  - sudo udevadm control --reload
+  - sudo udevadm trigger
+description:
+  load bfq modules
+body: |
+  ACTION=="add|change", KERNEL=="sd*[!0-9]|sr*|nvme*|mmcblk*", ATTR{queue/scheduler}="bfq"

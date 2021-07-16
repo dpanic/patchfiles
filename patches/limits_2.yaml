@@ -1,0 +1,7 @@
+output: /etc/pam.d/common-session
+mode: append
+commentCharacter: "#"
+description:
+  adds pam_limits kernel module to the pam in order to enable it for DESKTOP sessions
+body: |
+  session required pam_limits.so

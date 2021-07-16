@@ -1,0 +1,21 @@
+output: /etc/security/limits.conf
+mode: overwrite
+commentCharacter: "#"
+description:
+  implements limits for number of file descriptors (opened files), for all users as well as for user root.
+  implements as well limits of number of processess started for all users as well as for user root.
+body: |
+  *         hard    nofile      524288
+  *         soft    nofile      524288
+  root      hard    nofile      524288
+  root      soft    nofile      524288
+
+
+  *         soft    nproc       10240
+  *         hard    nproc       10240
+  root      soft    nproc       10240
+  root      hard    nproc       10240
+
+  *         hard    stack       131072
+  *         soft    stack       131072
+
