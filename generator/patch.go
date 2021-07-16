@@ -34,6 +34,7 @@ const (
 	{{.Body}}
 	#
 	
+	echo -e "\n\n\n"
 	echo "Patching '{{.Name}}'"
 	echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
 
@@ -59,7 +60,7 @@ func writePatch(p *parser.Result, environment string, log *zap.Logger) (err erro
 	bodyCommented = strings.Trim(bodyCommented, "\n")
 
 	// generate payload
-	p.Patch.Body = fmt.Sprintf("%s PATCHFILES START\n%s\n%s PATCHFILES END\n", p.Patch.CommentCharacter, p.Patch.Body, p.Patch.CommentCharacter)
+	p.Patch.Body = fmt.Sprintf("\n%s PATCHFILES START\n%s\n%s PATCHFILES END\n", p.Patch.CommentCharacter, p.Patch.Body, p.Patch.CommentCharacter)
 	payload := base64.StdEncoding.EncodeToString([]byte(p.Patch.Body))
 
 	// write mode

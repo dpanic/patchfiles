@@ -77,5 +77,4 @@ func Write(p *parser.Result, environment string, log *zap.Logger) {
 			zap.Error(err),
 		)
 	}
-
 }

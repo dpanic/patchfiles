@@ -29,6 +29,7 @@ System automatically builds revert.sh script, whcih can bu run in order to rever
 * ~~implement detection if patched, used in patch script~~ ✅ 
 * ~~implement detection if not patched, used in revert script~~ ✅ 
 * implement revert %
+* implement revert move .old to .current file if overwrite used in patching % 
 * implement github ci/cd % 
     * docker % 
     * hooks % 

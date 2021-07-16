@@ -1,5 +1,5 @@
 output: /etc/sysctl.conf
-mode: append
+mode: overwrite
 commentCharacter: "#"
 commandsAfter: 
   - sysctl -p
