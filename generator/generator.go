@@ -58,8 +58,9 @@ func Open(log *zap.Logger, environment string) {
 // Close closes opened file descriptors for
 func Close() {
 	if fdPatch != nil {
-		fdPatch.Close()
+		fdPatch.WriteString(fmt.Sprintf("echo 1 > %s\n", patchFilesControlFile))
 		fdPatch.Sync()
+		fdPatch.Close()
 	}
 
 	if fdRevert != nil {

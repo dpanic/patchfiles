@@ -20,15 +20,31 @@ const (
 	# built: {{.Built}}
 	#
 	#
+
+	{{ if eq .ScriptFor "PATCHING" }}
+		if test -f "{{.PatchFilesControlFile}}"; then
+			echo "System already patched exiting"
+			exit 0
+		fi
+	{{ end }}	
+
+	{{ if eq .ScriptFor "REVERTING" }}
+		if test ! -f "{{.PatchFilesControlFile}}"; then
+			echo "System is not patched. Exiting."
+			exit 0
+		fi
+	{{ end }}	
+
 	`
 )
 
 type Header struct {
-	ScriptFor   string
-	Author      string
-	Version     string
-	Environment string
-	Built       string
+	ScriptFor             string
+	Author                string
+	Version               string
+	Environment           string
+	Built                 string
+	PatchFilesControlFile string
 }
 
 // generateHeader generates header based on input parameters
@@ -44,11 +60,12 @@ func generateHeader(scriptFor, environment string) (res string, err error) {
 	version = strings.Trim(version, " ")
 
 	data := Header{
-		Author:      author,
-		Version:     version,
-		Built:       built,
-		ScriptFor:   scriptFor,
-		Environment: environment,
+		Author:                author,
+		Version:               version,
+		Built:                 built,
+		ScriptFor:             scriptFor,
+		Environment:           environment,
+		PatchFilesControlFile: patchFilesControlFile,
 	}
 
 	var (

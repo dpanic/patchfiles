@@ -21,7 +21,9 @@ type PatchItem struct {
 	CommandsAfter []string
 }
 
-const templatePatchItem = `
+const (
+	patchFilesControlFile = "/patchfile"
+	templatePatchItem     = `
 	#
 	# COMMAND '{{.Name}}'
 	#
@@ -39,6 +41,7 @@ const templatePatchItem = `
 		{{$command}}
 	{{ end }}
 `
+)
 
 func writePatch(p *parser.Result, environment string, log *zap.Logger) (err error) {
 	logger := log.WithOptions(zap.Fields(
