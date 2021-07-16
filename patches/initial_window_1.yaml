@@ -1,0 +1,14 @@
+output: /etc/rc.local
+mode: overwrite
+commentCharacter: "#"
+executeAfter: 
+  - chmod +x /etc/rc.local
+  - systemctl enable rc-local.service
+description:
+  As mentioned in Google's research https://research.google/pubs/pub36640/ it is usefull to increase intial window size to at least 10. Improves latency ant throughput.
+body: |
+  #!/bin/sh -e
+  defrt=`ip route | grep "^default" | head -1`
+  ip route change $defrt initcwnd 10
+
+  exit 0

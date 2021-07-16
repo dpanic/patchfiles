@@ -2,8 +2,8 @@ output: /etc/udev/rules.d/60-scheduler.rules
 mode: overwrite
 commentCharacter: "#"
 executeAfter: 
-  - sudo udevadm control --reload
-  - sudo udevadm trigger
+  - udevadm control --reload
+  - udevadm trigger
 description:
   load bfq modules
 body: |

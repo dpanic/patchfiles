@@ -17,5 +17,6 @@ type Patch struct {
 // parse function parses desired file to structure
 func parse(body []byte) (patch *Patch, err error) {
 	err = yaml.Unmarshal(body, &patch)
+
 	return
 }

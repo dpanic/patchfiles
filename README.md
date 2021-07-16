@@ -8,21 +8,23 @@ Implemented are:
 * open files limit
 * sshd secure server
 * bfq scheduler
-* tune initial window size %
+* tune initial window size
 
 System automatically builds revert.sh script, whcih can bu run in order to revert back changes.
 
 ## PATCH (INSTALL)
-```bash <(curl -Ss https://raw.githubusercontent.com/dpanic/patchfiles/main/patch_main.sh)```
+```sudo bash <(curl -Ss https://raw.githubusercontent.com/dpanic/patchfiles/main/patch_main.sh)```
 
 ## REVERT (UNINSTALL)
-```bash <(curl -Ss https://raw.githubusercontent.com/dpanic/patchfiles/main/revert_main.sh)```
+```sudo bash <(curl -Ss https://raw.githubusercontent.com/dpanic/patchfiles/main/revert_main.sh)```
 
 
 
 ## TODO:
 * implement stats ✅
 * implement after patch command ✅
+* implement detection if patched, used in patch script %
+* implement detection if not patched, used in revert script %
 * implement revert %
 * implement github ci/cd % 
     * docker % 
