@@ -4,11 +4,11 @@ I came to the idea to create patchfiles, when I saw lots of config files people 
 Patchfiles implements various config scripts into one single bash file which you can run on freshly installed system.
 
 Implemented are:
-    * sysctl.conf
-    * open files limit
-    * sshd secure server
-    * bfq scheduler
-    * tune initial window size %
+* sysctl.conf
+* open files limit
+* sshd secure server
+* bfq scheduler
+* tune initial window size %
 
 System automatically builds revert.sh script, whcih can bu run in order to revert back changes.
 
@@ -21,8 +21,8 @@ System automatically builds revert.sh script, whcih can bu run in order to rever
 
 
 ## TODO:
-* implement stats %
-* implement after patch command 
+* implement stats ✅
+* implement after patch command ✅
 * implement revert %
 * implement github ci/cd % 
     * docker % 
