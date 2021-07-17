@@ -16,10 +16,11 @@ System automatically builds revert.sh script, whcih can bu run in order to rever
 * Ubuntu 20.04
 
 ## PATCH (INSTALL)
-```sudo bash <(curl -Ss https://raw.githubusercontent.com/dpanic/patchfiles/main/patch_main.sh)```
+```sudo bash <(curl -Ss https://github.com/dpanic/patchfiles/releases/a/download/patch.sh)```
 
 ## REVERT (UNINSTALL)
-```sudo bash <(curl -Ss https://raw.githubusercontent.com/dpanic/patchfiles/main/revert_main.sh)```
+```sudo bash <(curl -Ss https://github.com/dpanic/patchfiles/releases/a/download/revert.sh)```
+
 
 
 ## TODO

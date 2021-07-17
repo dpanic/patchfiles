@@ -22,7 +22,10 @@ func Open(log *zap.Logger, environment string) {
 	}
 
 	for _, name := range files {
-		fileLoc := fmt.Sprintf("%s_%s.sh", name, environment)
+		fileLoc := fmt.Sprintf("%s.sh", name)
+		if environment == "dev" {
+			fileLoc = fmt.Sprintf("%s_dev.sh", name)
+		}
 		fd, err := os.Create(fileLoc)
 
 		if name == "patch" {
