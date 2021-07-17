@@ -14,7 +14,7 @@ body: |
   vm.swappiness = 1
   vm.dirty_ratio = 60
   vm.dirty_background_ratio = 2
-  vm.max_map_count = 768000
+  vm.max_map_count = 262144
   vm.vfs_cache_pressure=50
   
   # icmp tunings

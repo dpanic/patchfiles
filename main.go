@@ -90,6 +90,7 @@ func main() {
 				zap.String("name", r.Name),
 			))
 			logger.Info("received result")
+
 			generator.Write(r, environment, log)
 			stats["good"] += 1
 			stats["total"] += 1

@@ -69,6 +69,9 @@ func writePatch(p *parser.Result, environment string, log *zap.Logger) (err erro
 		writeMode = ">>"
 	}
 
+	commandsAfter := p.Patch.CommandsAfter
+	command := fmt.Sprintf("cp -r %s %s.oldpatchfile", p.Patch.Output, p.Patch.Output)
+	commandsAfter = append(commandsAfter, command)
 	var (
 		buf = new(bytes.Buffer)
 	)
@@ -84,7 +87,7 @@ func writePatch(p *parser.Result, environment string, log *zap.Logger) (err erro
 		WriteMode:     writeMode,
 		Output:        p.Patch.Output,
 		Payload:       payload,
-		CommandsAfter: p.Patch.CommandsAfter,
+		CommandsAfter: commandsAfter,
 	}
 
 	t := template.Must(tpl, err)

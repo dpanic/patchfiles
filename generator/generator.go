@@ -73,7 +73,14 @@ func Close() {
 func Write(p *parser.Result, environment string, log *zap.Logger) {
 	err := writePatch(p, environment, log)
 	if err != nil {
-		log.Error("error in patching",
+		log.Error("error in writing patch file",
+			zap.Error(err),
+		)
+	}
+
+	err = writeRevert(p, environment, log)
+	if err != nil {
+		log.Error("error in writing revert file",
 			zap.Error(err),
 		)
 	}
