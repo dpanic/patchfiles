@@ -60,18 +60,21 @@ func writePatch(p *parser.Result, environment string, log *zap.Logger) (err erro
 	bodyCommented = strings.Trim(bodyCommented, "\n")
 
 	// generate payload
-	p.Patch.Body = fmt.Sprintf("\n%s PATCHFILES START\n%s\n%s PATCHFILES END\n", p.Patch.CommentCharacter, p.Patch.Body, p.Patch.CommentCharacter)
-	payload := base64.StdEncoding.EncodeToString([]byte(p.Patch.Body))
+	if p.Patch.Mode == "append" {
+		p.Patch.Body = fmt.Sprintf("\n%s PATCHFILES START\n%s\n%s PATCHFILES END\n", p.Patch.CommentCharacter, p.Patch.Body, p.Patch.CommentCharacter)
+	}
+	payload := base64.StdEncoding.EncodeToString([]byte(p.Patch.Body + "\n"))
 
 	// write mode
+	commandsAfter := p.Patch.CommandsAfter
 	writeMode := ">"
 	if p.Patch.Mode == "append" {
 		writeMode = ">>"
+	} else {
+		command := fmt.Sprintf("cp -r %s %s.oldpatchfile", p.Patch.Output, p.Patch.Output)
+		commandsAfter = append(commandsAfter, command)
 	}
 
-	commandsAfter := p.Patch.CommandsAfter
-	command := fmt.Sprintf("cp -r %s %s.oldpatchfile", p.Patch.Output, p.Patch.Output)
-	commandsAfter = append(commandsAfter, command)
 	var (
 		buf = new(bytes.Buffer)
 	)

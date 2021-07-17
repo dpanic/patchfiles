@@ -64,6 +64,7 @@ func Close() {
 	}
 
 	if fdRevert != nil {
+		fdRevert.WriteString(fmt.Sprintf("rm -rf %s\n", patchFilesControlFile))
 		fdRevert.Sync()
 		fdRevert.Close()
 	}
