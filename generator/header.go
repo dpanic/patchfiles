@@ -51,11 +51,11 @@ type Header struct {
 func generateHeader(scriptFor, environment string) (res string, err error) {
 	built := time.Now().UTC().Format("2006-01-02 15:04:05 -07:00")
 
-	author := os.Getenv("author")
+	author := os.Getenv("AUTHOR")
 	author = strings.ToLower(author)
 	author = strings.Trim(author, " ")
 
-	version := os.Getenv("version")
+	version := os.Getenv("VERSION")
 	version = strings.ToLower(version)
 	version = strings.Trim(version, " ")
 

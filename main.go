@@ -20,7 +20,7 @@ import (
 var (
 	//go:embed patches/*.yaml
 	content embed.FS
-	verbose = flag.Bool("verbose", true, "disable or enable verbose")
+	verbose = flag.Bool("VERBOSE", true, "disable or enable verbose")
 )
 
 const (
@@ -41,7 +41,7 @@ func main() {
 	)
 
 	// determine environment
-	environment := os.Getenv("environment")
+	environment := os.Getenv("ENVIRONMENT")
 	environment = strings.ToLower(environment)
 	environment = strings.Trim(environment, " ")
 	if environment == "" {
