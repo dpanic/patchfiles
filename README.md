@@ -1,4 +1,6 @@
 # PATCHFILES
+[![Go Report Card](https://goreportcard.com/badge/github.com/dpanic/patchfiles)](https://goreportcard.com/report/github.com/dpanic/patchfiles)
+
 I came to the idea to create patchfiles, when I saw lots of config files people create.
  
 Patchfiles implements various config scripts into one single bash file which you can run on freshly installed system.
