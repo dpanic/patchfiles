@@ -1,5 +1,5 @@
 output: /etc/ssh/sshd_config
-mode: append
+mode: overwrite
 commentCharacter: "#"
 commandsAfter: 
   - systemctl restart sshd
