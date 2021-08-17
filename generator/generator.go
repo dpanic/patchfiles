@@ -27,6 +27,7 @@ func Open(log *zap.Logger, environment string) {
 			fileLoc = fmt.Sprintf("%s_dev.sh", name)
 		}
 		fd, err := os.Create(fileLoc)
+		os.Chmod(fileLoc, 0755)
 
 		if name == "patch" {
 			fdPatch = fd

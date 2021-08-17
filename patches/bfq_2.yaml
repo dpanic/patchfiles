@@ -1,4 +1,6 @@
 output: /etc/udev/rules.d/60-scheduler.rules
+categories: 
+  - performance
 mode: overwrite
 commentCharacter: "#"
 commandsAfter: 

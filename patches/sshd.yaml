@@ -1,4 +1,6 @@
 output: /etc/ssh/sshd_config
+categories: 
+  - security
 mode: overwrite
 commentCharacter: "#"
 commandsAfter: 

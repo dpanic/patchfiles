@@ -1,4 +1,6 @@
 output: /etc/pam.d/common-session-noninteractive
+categories: 
+  - performance
 mode: append
 commentCharacter: "#"
 description:

@@ -1,4 +1,6 @@
 output: /etc/security/limits.conf
+categories: 
+  - performance
 mode: overwrite
 commentCharacter: "#"
 description:

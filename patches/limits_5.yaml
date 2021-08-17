@@ -1,4 +1,6 @@
 output: /etc/systemd/user.conf
+categories: 
+  - performance
 mode: append
 commentCharacter: "#"
 description:

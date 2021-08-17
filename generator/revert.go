@@ -11,10 +11,12 @@ import (
 )
 
 type RevertItem struct {
-	Name          string
-	Description   string
-	Command       string
-	CommandsAfter []string
+	Name             string
+	Description      string
+	Categories       []string
+	CategoriesIfCase string
+	Command          string
+	CommandsAfter    []string
 }
 
 const (
@@ -22,16 +24,23 @@ const (
 	#
 	# COMMAND '{{.Name}}'
 	#
+	# Categories: '{{.Categories}}'
+	#
+	#
 	# description:
 	#    {{.Description}}
 	#
-	echo -e "\n\n\n"
-	echo "Reverting '{{.Name}}'"
 
-	{{.Command}}
-	{{ range $command := .CommandsAfter }}
-		{{$command}}
-	{{ end }}
+
+	if [[ "$category" == "all" {{.CategoriesIfCase}} ]]; then
+		echo -e "\n\n\n"
+		echo "Reverting '{{.Name}}'"
+
+		{{.Command}}
+		{{ range $command := .CommandsAfter }}
+			{{$command}}
+		{{ end }}
+	fi;
 `
 )
 
@@ -67,11 +76,23 @@ func writeRevert(p *parser.Result, environment string, log *zap.Logger) (err err
 		return
 	}
 
+	// prepare categories if case
+	categories := make([]string, 0)
+	for _, category := range p.Patch.Categories {
+		categories = append(categories, fmt.Sprintf("\"$category\" == \"%s\"", category))
+	}
+	categoriesIfCase := strings.Join(categories, " || ")
+	categoriesIfCase = strings.Trim(categoriesIfCase, " ")
+	if categoriesIfCase != "" {
+		categoriesIfCase = " || " + categoriesIfCase
+	}
+
 	data := RevertItem{
-		Name:          p.Name,
-		Description:   p.Patch.Description,
-		Command:       command,
-		CommandsAfter: p.Patch.CommandsAfter,
+		Name:             p.Name,
+		Description:      p.Patch.Description,
+		Command:          command,
+		CommandsAfter:    p.Patch.CommandsAfter,
+		CategoriesIfCase: categoriesIfCase,
 	}
 
 	t := template.Must(tpl, err)
