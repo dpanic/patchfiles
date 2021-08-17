@@ -11,7 +11,8 @@ import (
 )
 
 type RevertItem struct {
-	Name             string
+	NameShort        string
+	NameLong         string
 	Description      string
 	Categories       []string
 	CategoriesIfCase string
@@ -22,7 +23,7 @@ type RevertItem struct {
 const (
 	templateRevertItem = `
 	#
-	# COMMAND '{{.Name}}'
+	# COMMAND '{{.NameLong}}'
 	#
 	# Categories: '{{.Categories}}'
 	#
@@ -32,9 +33,9 @@ const (
 	#
 
 
-	if [[ "$category" == "all" {{.CategoriesIfCase}} ]]; then
+	if [[ "$category" == "all" || "$category" == "{{.NameShort}}" {{.CategoriesIfCase}} ]]; then
 		echo -e "\n\n\n"
-		echo "Reverting '{{.Name}}'"
+		echo "Reverting '{{.NameLong}}'"
 
 		{{.Command}}
 		{{ range $command := .CommandsAfter }}
@@ -76,6 +77,8 @@ func writeRevert(p *parser.Result, environment string, log *zap.Logger) (err err
 		return
 	}
 
+	nameShort := strings.Split(p.Name, "_")[0]
+
 	// prepare categories if case
 	categories := make([]string, 0)
 	for _, category := range p.Patch.Categories {
@@ -88,7 +91,8 @@ func writeRevert(p *parser.Result, environment string, log *zap.Logger) (err err
 	}
 
 	data := RevertItem{
-		Name:             p.Name,
+		NameLong:         p.Name,
+		NameShort:        nameShort,
 		Description:      p.Patch.Description,
 		Command:          command,
 		CommandsAfter:    p.Patch.CommandsAfter,

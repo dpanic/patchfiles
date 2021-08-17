@@ -12,7 +12,8 @@ import (
 )
 
 type PatchItem struct {
-	Name             string
+	NameShort        string
+	NameLong         string
 	Description      string
 	Body             string
 	Payload          string
@@ -27,7 +28,7 @@ const (
 	patchFilesControlFile = "/patchfile"
 	templatePatchItem     = `
 	#
-	# COMMAND '{{.Name}}'
+	# COMMAND '{{.NameLong}}'
 	# 
 	# Categories: '{{.Categories}}'
 	#
@@ -38,9 +39,9 @@ const (
 	{{.Body}}
 	#
 	
-	if [[ "$category" == "all" {{.CategoriesIfCase}} ]]; then
+	if [[ "$category" == "all" || "$category" == "{{.NameShort}}" {{.CategoriesIfCase}} ]]; then
 		echo -e "\n\n\n";
-		echo "Patching '{{.Name}}'";
+		echo "Patching '{{.NameLong}}'";
 		
 		echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
 
@@ -101,8 +102,11 @@ func writePatch(p *parser.Result, environment string, log *zap.Logger) (err erro
 		return
 	}
 
+	nameShort := strings.Split(p.Name, "_")[0]
+
 	data := PatchItem{
-		Name:             p.Name,
+		NameLong:         p.Name,
+		NameShort:        nameShort,
 		Description:      p.Patch.Description,
 		Body:             bodyCommented,
 		WriteMode:        writeMode,

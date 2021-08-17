@@ -24,7 +24,8 @@ const (
 	args=("$@")
 	category="${args[0]}"
 	if [[ "$category" == "" ]]; then
-		category="all"
+		echo "Choose what to patch. Consult help pages.";
+		exit 1;
 	fi;
 
 	{{ if eq .ScriptFor "PATCHING" }}
