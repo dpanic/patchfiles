@@ -36,6 +36,7 @@ const (
 			echo "* {{$name}}";
 		{{ end }}
 
+		echo -e "\n";
 		echo "Examples:";
 		echo "./patch.sh all";
 		echo "./patch.sh security";
@@ -43,8 +44,7 @@ const (
 		echo "./revert.sh sshd";
 	}
 
-	if [[ "$category" == "" ]]; then
-		echo "Choose what to patch. Consult help pages.";
+	if [[ "$category" == "" || "$category" == "help" ]]; then
 		help_me;
 		exit 1;
 	fi;

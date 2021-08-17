@@ -20,14 +20,21 @@ System automatically builds revert.sh script, whcih can bu run in order to rever
 ## PATCH (INSTALL)
 Start as a root:
 ```
-bash <(curl -L -s https://github.com/dpanic/patchfiles/releases/latest/download/patch.sh)
+bash <(curl -L -s https://github.com/dpanic/patchfiles/releases/latest/download/patch.sh) all
 ```
 
 ## REVERT (UNINSTALL)
 Start as a root:
 ```
-bash <(curl -L -Ss https://github.com/dpanic/patchfiles/releases/latest/download/revert.sh)
+bash <(curl -L -Ss https://github.com/dpanic/patchfiles/releases/latest/download/revert.sh) all
 ```
+
+## HELP
+Invoke help with following command:
+```
+bash <(curl -L -Ss https://github.com/dpanic/patchfiles/releases/latest/download/revert.sh) help
+```
+
 
 
 
