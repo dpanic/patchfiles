@@ -45,8 +45,8 @@ const (
 `
 )
 
-func writeRevert(p *parser.Result, environment string, log *zap.Logger) (err error) {
-	logger := log.WithOptions(zap.Fields(
+func (generator *Generator) writeRevert(p *parser.Result) (err error) {
+	logger := generator.Log.WithOptions(zap.Fields(
 		zap.String("fileLoc", *p.FileLoc),
 		zap.String("name", p.Name),
 	))
@@ -107,8 +107,8 @@ func writeRevert(p *parser.Result, environment string, log *zap.Logger) (err err
 
 	body := buf.String()
 	body = strings.ReplaceAll(body, "\t", "")
-	fdRevert.WriteString(body + "\n")
-	fdRevert.Sync()
+	generator.fdRevert.WriteString(body + "\n")
+	generator.fdRevert.Sync()
 
 	return
 }

@@ -6,11 +6,12 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 const (
-	templateHeader = `
-	#!/usr/bin/env bash
+	templateHeader = `#!/usr/bin/env bash
 	#
 	# PATCHFILES SCRIPT FOR {{.ScriptFor}}
 	# 
@@ -23,10 +24,6 @@ const (
 
 	args=("$@")
 	category="${args[0]}"
-	if [[ "$category" == "" ]]; then
-		echo "Choose what to patch. Consult help pages.";
-		exit 1;
-	fi;
 
 	{{ if eq .ScriptFor "PATCHING" }}
 		if test -f "{{.PatchFilesControlFile}}"; then
@@ -55,7 +52,12 @@ type Header struct {
 }
 
 // generateHeader generates header based on input parameters
-func generateHeader(scriptFor, environment string) (res string, err error) {
+func (generator *Generator) writeHeader(fd *os.File, scriptFor string) (err error) {
+	logger := generator.Log.WithOptions(zap.Fields())
+	logger.Debug("attempt to write footer",
+		zap.String("scriptFor", scriptFor),
+	)
+
 	built := time.Now().UTC().Format("2006-01-02 15:04:05 -07:00")
 
 	author := os.Getenv("AUTHOR")
@@ -71,7 +73,7 @@ func generateHeader(scriptFor, environment string) (res string, err error) {
 		Version:               version,
 		Built:                 built,
 		ScriptFor:             scriptFor,
-		Environment:           environment,
+		Environment:           generator.Environment,
 		PatchFilesControlFile: patchFilesControlFile,
 	}
 
@@ -87,7 +89,11 @@ func generateHeader(scriptFor, environment string) (res string, err error) {
 		return
 	}
 
-	res = buf.String()
+	res := buf.String()
 	res = strings.ReplaceAll(res, "\t", "")
+
+	fd.WriteString(res)
+	fd.Sync()
+
 	return
 }

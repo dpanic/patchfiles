@@ -47,7 +47,12 @@ func main() {
 	if environment == "" {
 		environment = "dev"
 	}
-	generator.Open(log, environment)
+
+	gen := generator.Generator{
+		Log:         log,
+		Environment: environment,
+	}
+	gen.Open()
 
 	// setup context timeout
 	ctx := context.Background()
@@ -91,12 +96,14 @@ func main() {
 			))
 			logger.Info("received result")
 
-			generator.Write(r, environment, log)
+			gen.Write(r)
 			stats["good"] += 1
 			stats["total"] += 1
 
 		case <-ctx.Done():
 			log.Info("context is done")
+
+			gen.Close()
 
 			log.Debug("processing is done. stats",
 				zap.Int("total", stats["total"]),
@@ -104,7 +111,6 @@ func main() {
 				zap.Int("errors", stats["errors"]),
 			)
 
-			generator.Close()
 			os.Exit(0)
 		}
 	}
