@@ -37,9 +37,9 @@ bash <(curl -L -Ss https://github.com/dpanic/patchfiles/releases/latest/download
 * ~~implement detection if not patched, used in revert script~~ ✅ 
 * ~~implement revert~~ ✅ 
 * ~~implement revert move .old to .current file if overwrite used in patching~~ ✅ 
-* implement categories (networking, performance, security, general ...) 
-* implement patch by category  
-* implement revert by category 
+* ~~implement categories (networking, performance, security, general ...)~~ ✅
+* ~~implement patch by category~~ ✅
+* ~~implement revert by category~~ ✅
 * implement github ci/cd % 
     * docker % 
     * hooks % 
