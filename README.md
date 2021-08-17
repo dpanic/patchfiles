@@ -44,7 +44,7 @@ bash <(curl -L -Ss https://github.com/dpanic/patchfiles/releases/latest/download
 * ~~implement revert by category~~ ✅
 * ~~implement patch by file name~~ ✅
 * ~~implement revert by file name~~ ✅
-* implement help page %
+* ~~implement help page~~ ✅
 
 * implement github ci/cd % 
     * docker % 

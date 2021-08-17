@@ -52,8 +52,8 @@ const (
 `
 )
 
-func writePatch(p *parser.Result, environment string, log *zap.Logger) (err error) {
-	logger := log.WithOptions(zap.Fields(
+func (generator *Generator) writePatch(p *parser.Result) (err error) {
+	logger := generator.Log.WithOptions(zap.Fields(
 		zap.String("fileLoc", *p.FileLoc),
 		zap.String("name", p.Name),
 	))
@@ -125,7 +125,7 @@ func writePatch(p *parser.Result, environment string, log *zap.Logger) (err erro
 
 	body := buf.String()
 	body = strings.ReplaceAll(body, "\t", "")
-	fdPatch.WriteString(body + "\n")
-	fdPatch.Sync()
+	generator.fdPatch.WriteString(body + "\n")
+	generator.fdPatch.Sync()
 	return
 }
