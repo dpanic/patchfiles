@@ -1,4 +1,6 @@
 output: /etc/rc.local
+categories: 
+  - networking
 mode: overwrite
 commentCharacter: "#"
 commandsAfter: 

@@ -1,4 +1,8 @@
 output: /etc/sysctl.conf
+categories: 
+  - security
+  - networking
+  - performance
 mode: overwrite
 commentCharacter: "#"
 commandsAfter: 

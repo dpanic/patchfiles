@@ -10,7 +10,7 @@ import (
 
 const (
 	templateHeader = `
-	#!/bin/bash
+	#!/usr/bin/env bash
 	#
 	# PATCHFILES SCRIPT FOR {{.ScriptFor}}
 	# 
@@ -20,6 +20,12 @@ const (
 	# built: {{.Built}}
 	#
 	#
+
+	args=("$@")
+	category="${args[0]}"
+	if [[ "$category" == "" ]]; then
+		category="all"
+	fi;
 
 	{{ if eq .ScriptFor "PATCHING" }}
 		if test -f "{{.PatchFilesControlFile}}"; then

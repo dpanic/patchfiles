@@ -1,4 +1,6 @@
 output: /etc/modules-load.d/bfq.conf
+categories: 
+  - performance
 mode: overwrite
 commentCharacter: "#"
 commandsAfter: 

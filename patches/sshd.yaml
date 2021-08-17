@@ -1,5 +1,7 @@
 output: /etc/ssh/sshd_config
-mode: append
+categories: 
+  - security
+mode: overwrite
 commentCharacter: "#"
 commandsAfter: 
   - systemctl restart sshd

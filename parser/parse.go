@@ -11,6 +11,7 @@ type Patch struct {
 	Body             string   `yaml:"body"`
 	CommandsAfter    []string `yaml:"commandsAfter"`
 	CommentCharacter string   `yaml:"commentCharacter"`
+	Categories       []string `yaml:"categories"`
 	Description      string   `yaml:"description"`
 }
 

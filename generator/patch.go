@@ -12,13 +12,15 @@ import (
 )
 
 type PatchItem struct {
-	Name          string
-	Description   string
-	Body          string
-	Payload       string
-	WriteMode     string
-	Output        string
-	CommandsAfter []string
+	Name             string
+	Description      string
+	Body             string
+	Payload          string
+	WriteMode        string
+	Output           string
+	Categories       []string
+	CategoriesIfCase string
+	CommandsAfter    []string
 }
 
 const (
@@ -26,6 +28,8 @@ const (
 	templatePatchItem     = `
 	#
 	# COMMAND '{{.Name}}'
+	# 
+	# Categories: '{{.Categories}}'
 	#
 	# description:
 	#    {{.Description}}
@@ -34,13 +38,16 @@ const (
 	{{.Body}}
 	#
 	
-	echo -e "\n\n\n"
-	echo "Patching '{{.Name}}'"
-	echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
+	if [[ "$category" == "all" {{.CategoriesIfCase}} ]]; then
+		echo -e "\n\n\n";
+		echo "Patching '{{.Name}}'";
+		
+		echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
 
-	{{ range $command := .CommandsAfter }}
-		{{$command}}
-	{{ end }}
+		{{ range $command := .CommandsAfter }}
+			{{$command}}
+		{{ end }}
+	fi
 `
 )
 
@@ -75,6 +82,17 @@ func writePatch(p *parser.Result, environment string, log *zap.Logger) (err erro
 		commandsAfter = append(commandsAfter, command)
 	}
 
+	// prepare categories if case
+	categories := make([]string, 0)
+	for _, category := range p.Patch.Categories {
+		categories = append(categories, fmt.Sprintf("\"$category\" == \"%s\"", category))
+	}
+	categoriesIfCase := strings.Join(categories, " || ")
+	categoriesIfCase = strings.Trim(categoriesIfCase, " ")
+	if categoriesIfCase != "" {
+		categoriesIfCase = " || " + categoriesIfCase
+	}
+
 	var (
 		buf = new(bytes.Buffer)
 	)
@@ -84,13 +102,15 @@ func writePatch(p *parser.Result, environment string, log *zap.Logger) (err erro
 	}
 
 	data := PatchItem{
-		Name:          p.Name,
-		Description:   p.Patch.Description,
-		Body:          bodyCommented,
-		WriteMode:     writeMode,
-		Output:        p.Patch.Output,
-		Payload:       payload,
-		CommandsAfter: commandsAfter,
+		Name:             p.Name,
+		Description:      p.Patch.Description,
+		Body:             bodyCommented,
+		WriteMode:        writeMode,
+		Output:           p.Patch.Output,
+		Payload:          payload,
+		CommandsAfter:    commandsAfter,
+		Categories:       p.Patch.Categories,
+		CategoriesIfCase: categoriesIfCase,
 	}
 
 	t := template.Must(tpl, err)
@@ -103,6 +123,5 @@ func writePatch(p *parser.Result, environment string, log *zap.Logger) (err erro
 	body = strings.ReplaceAll(body, "\t", "")
 	fdPatch.WriteString(body + "\n")
 	fdPatch.Sync()
-
 	return
 }

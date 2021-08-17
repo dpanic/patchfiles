@@ -1,4 +1,6 @@
 output: /etc/pam.d/common-session
+categories: 
+  - performance
 mode: append
 commentCharacter: "#"
 description:
