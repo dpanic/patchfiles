@@ -38,8 +38,8 @@ body: |
   net.ipv4.tcp_fastopen = 3               # 1             
   
   # not needed on lan, maybe on 3G/4G
-  net.ipv4.tcp_sack = 0                   # 1             
-  net.ipv4.tcp_dsack = 0                  # 1             
+  net.ipv4.tcp_sack = 1                   # 1             
+  net.ipv4.tcp_dsack = 1                  # 1             
   net.ipv4.tcp_fack = 0                   # 0             
   
   # tcp memory tunings
