@@ -61,7 +61,7 @@ body: |
   net.ipv4.tcp_moderate_rcvbuf = 1        # 1
   
   # disable TCP slow start on idle connections
-  net.ipv4.tcp_slow_start_after_idle = 0  # 1             
+  net.ipv4.tcp_slow_start_after_idle = 1  # 1             
   
   # udp tunings
   net.ipv4.udp_rmem_min = 8192            # 4096
