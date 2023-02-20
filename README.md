@@ -19,6 +19,7 @@ System automatically builds revert.sh script, whcih can bu run in order to rever
 
 ## BUILT AND TESTED ON
 * Ubuntu 20.04
+* Ubuntu 22.04
 
 ## PATCH (INSTALL)
 Start as a root:
