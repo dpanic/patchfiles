@@ -21,6 +21,9 @@ System automatically builds revert.sh script, whcih can bu run in order to rever
 * Ubuntu 20.04
 * Ubuntu 22.04
 
+## KNOWN ISSUES
+* Doesn't work on Broadcom 5762 (RTL8111/8168/8411)
+
 ## PATCH (INSTALL)
 Start as a root:
 ```
