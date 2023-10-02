@@ -17,3 +17,5 @@
 
 patch_*.sh
 revert_*.sh
+
+.husky
