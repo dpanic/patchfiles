@@ -6,4 +6,4 @@ commentCharacter: "#"
 description:
   for systems using systemd this append is needed to increase number of opened files
 body: |
-  DefaultLimitNOFILE=1048576
+  DefaultLimitNOFILE=2097152

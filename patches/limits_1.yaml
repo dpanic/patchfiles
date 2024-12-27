@@ -7,10 +7,10 @@ description:
   implements limits for number of file descriptors (opened files), for all users as well as for user root.
   implements as well limits of number of processess started for all users as well as for user root.
 body: |
-  *         hard    nofile      524288
-  *         soft    nofile      524288
-  root      hard    nofile      524288
-  root      soft    nofile      524288
+  *         hard    nofile      2097152
+  *         soft    nofile      2097152
+  root      hard    nofile      2097152
+  root      soft    nofile      2097152
 
 
   *         soft    nproc       10240
