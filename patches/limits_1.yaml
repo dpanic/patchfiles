@@ -12,11 +12,10 @@ body: |
   root      hard    nofile      2097152
   root      soft    nofile      2097152
 
-
-  *         soft    nproc       10240
-  *         hard    nproc       10240
-  root      soft    nproc       10240
-  root      hard    nproc       10240
+  *         soft    nproc       65535
+  *         hard    nproc       65535
+  root      soft    nproc       65535
+  root      hard    nproc       65535
 
   *         hard    stack       131072
   *         soft    stack       131072
