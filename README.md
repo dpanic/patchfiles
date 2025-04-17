@@ -12,7 +12,6 @@ Patchfiles implements various config scripts into one single bash file which you
 * sysctl.conf
 * open files limit
 * sshd secure server
-* bfq scheduler
 * tune initial window size
 
 System automatically builds revert.sh script, whcih can bu run in order to revert back changes.

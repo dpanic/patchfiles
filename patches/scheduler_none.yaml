@@ -7,6 +7,6 @@ commandsAfter:
   - udevadm control --reload
   - udevadm trigger
 description:
-  load bfq modules
+  disables disk scheduler
 body: |
-  ACTION=="add|change", KERNEL=="sd*[!0-9]|sr*|nvme*|mmcblk*", ATTR{queue/scheduler}="bfq"
+  ACTION=="add|change", KERNEL=="sd*[!0-9]|sr*|nvme*|mmcblk*", ATTR{queue/scheduler}="none"
