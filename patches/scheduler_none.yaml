@@ -1,0 +1,12 @@
+output: /etc/udev/rules.d/60-scheduler.rules
+categories: 
+  - performance
+mode: overwrite
+commentCharacter: "#"
+commandsAfter: 
+  - udevadm control --reload
+  - udevadm trigger
+description:
+  disables disk scheduler
+body: |
+  ACTION=="add|change", KERNEL=="sd*[!0-9]|sr*|nvme*|mmcblk*", ATTR{queue/scheduler}="none"
