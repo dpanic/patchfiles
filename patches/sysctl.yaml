@@ -40,7 +40,7 @@ body: |
   net.core.busy_poll = 0
   net.core.busy_read = 0
   net.ipv4.ipfrag_high_thresh = 8388608
-  net.ipv4.tcp_fastopen = 1                        # Enable TFO for clients only
+  net.ipv4.tcp_fastopen = 3
 
   # TCP features (safe defaults)
   net.ipv4.tcp_sack = 1
