@@ -25,13 +25,6 @@ const (
 	args=("$@")
 	category="${args[0]}"
 
-	{{ if eq .ScriptFor "PATCHING" }}
-		if test -f "{{.PatchFilesControlFile}}"; then
-			echo "System already patched exiting"
-			exit 0
-		fi
-	{{ end }}	
-
 	{{ if eq .ScriptFor "REVERTING" }}
 		if test ! -f "{{.PatchFilesControlFile}}"; then
 			echo "System is not patched. Exiting."
@@ -77,9 +70,7 @@ func (generator *Generator) writeHeader(fd *os.File, scriptFor string) (err erro
 		PatchFilesControlFile: patchFilesControlFile,
 	}
 
-	var (
-		buf = new(bytes.Buffer)
-	)
+	buf := new(bytes.Buffer)
 
 	tpl, err := template.New("template").Parse(templateHeader)
 

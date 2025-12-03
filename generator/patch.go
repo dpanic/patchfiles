@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"patchfiles/parser"
 	"strings"
 	"text/template"
+
+	"patchfiles/parser"
 
 	"go.uber.org/zap"
 )
@@ -42,6 +43,31 @@ const (
 	if [[ "$category" == "all" || "$category" == "{{.NameShort}}" {{.CategoriesIfCase}} ]]; then
 		echo -e "\n\n\n";
 		echo "Patching '{{.NameLong}}'";
+		
+		SKIP_PATCH=0
+		{{ if eq .WriteMode ">>" }}
+		# Check if already patched (append mode)
+		if grep -q "PATCHFILES START" "{{.Output}}" 2>/dev/null; then
+			echo "Warning: '{{.NameLong}}' appears to be already patched. Skipping to avoid duplicates."
+			echo "If you want to re-apply, use revert first or manually remove PATCHFILES START/END blocks."
+			SKIP_PATCH=1
+		fi
+		{{ else }}
+		# Check if already patched (overwrite mode)
+		if [ -f "{{.Output}}.oldpatchfile" ]; then
+			echo "Warning: '{{.NameLong}}' appears to be already patched (backup file exists). Skipping to avoid overwriting backup."
+			echo "If you want to re-apply, use revert first or manually remove {{.Output}}.oldpatchfile"
+			SKIP_PATCH=1
+		fi
+		{{ end }}
+		
+		if [ "$SKIP_PATCH" -eq 0 ]; then
+			echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
+
+			{{ range $command := .CommandsAfter }}
+				{{$command}}
+			{{ end }}
+		fi
 		
 		echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
 
@@ -94,9 +120,7 @@ func (generator *Generator) writePatch(p *parser.Result) (err error) {
 		categoriesIfCase = " || " + categoriesIfCase
 	}
 
-	var (
-		buf = new(bytes.Buffer)
-	)
+	buf := new(bytes.Buffer)
 	tpl, err := template.New("template").Parse(templatePatchItem)
 	if err != nil {
 		return
