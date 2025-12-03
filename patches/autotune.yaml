@@ -7,56 +7,70 @@ commentCharacter: "#"
 commandsAfter: 
   - chmod +x /usr/bin/autotune.sh
   - |
-    # Add script call to /etc/rc.local
-    SCRIPT_CALL="/usr/bin/autotune.sh"
-    RC_LOCAL="/etc/rc.local"
+    # Create systemd service to run autotune.sh after sysctl.conf is loaded
+    # This ensures autotune.sh runs AFTER systemd-sysctl.service, so dynamic values override static ones
+    SERVICE_FILE="/etc/systemd/system/autotune.service"
+    SERVICE_DIR="/etc/systemd/system"
     
-    # Ensure /etc/rc.local exists with proper structure
-    if [ ! -f "$RC_LOCAL" ]; then
-      echo '#!/bin/bash' > "$RC_LOCAL"
-      echo 'exit 0' >> "$RC_LOCAL"
-    fi
+    # Create service file
+    cat > "$SERVICE_FILE" << 'EOFSERVICE'
+    [Unit]
+    Description=Dynamic kernel parameter tuning based on RAM
+    After=systemd-sysctl.service network-online.target
+    Requires=systemd-sysctl.service
+    Wants=network-online.target
+    # Ensure this runs after all sysctl operations are complete
+    After=sysctl.service
     
-    # Add shebang if missing
-    if ! grep -qE '^#!/bin/(bash|sh)' "$RC_LOCAL" && ! grep -q '^#!/usr/bin/env bash' "$RC_LOCAL"; then
-      sed -i '1i#!/bin/bash' "$RC_LOCAL"
-    fi
+    [Service]
+    Type=oneshot
+    # Explicitly run as root (default, but making it clear for sysctl -w)
+    User=root
+    Group=root
+    ExecStart=/usr/bin/autotune.sh
+    RemainAfterExit=yes
+    StandardOutput=journal
+    StandardError=journal
+
     
-    # Add script call if not already present
-    if ! grep -q "$SCRIPT_CALL" "$RC_LOCAL"; then
-      # Move exit 0 to end if it exists
-      if grep -q '^exit 0' "$RC_LOCAL"; then
-        TEMP_FILE=$(mktemp)
-        grep -v '^exit 0' "$RC_LOCAL" > "$TEMP_FILE" || true
-        cat "$TEMP_FILE" > "$RC_LOCAL"
-        rm -f "$TEMP_FILE"
-      fi
-      # Add script call before exit 0
-      echo "$SCRIPT_CALL" >> "$RC_LOCAL"
-      echo 'exit 0' >> "$RC_LOCAL"
-    fi
+    [Install]
+    WantedBy=multi-user.target
+    EOFSERVICE
     
-    chmod +x "$RC_LOCAL"
+    # Reload systemd and enable service
+    systemctl daemon-reload
+    systemctl enable autotune.service
 description:
-  configure conntrack_max, tcp_max_tw_buckets, and fs.file-max dynamically based on available RAM. creates script in /usr/bin/autotune.sh and adds it to /etc/rc.local to run at boot time.
+  configure conntrack_max, tcp_max_tw_buckets, and fs.file-max dynamically based on available RAM. creates script in /usr/bin/autotune.sh and creates systemd service that runs after sysctl.conf is loaded to ensure dynamic values override static ones.
 body: |
   #!/usr/bin/env bash
 
   set -euo pipefail
 
   # PATCHFILES START - autotune configuration
+  # Ensure we're running as root (required for sysctl -w)
+  if [ "$EUID" -ne 0 ]; then
+      echo "Error: This script must be run as root" >&2
+      exit 1
+  fi
   # Minimum number of conntrack entries
   MIN_CONNTRACK=65536
 
   # Number of entries per 1 GB RAM (e.g., 65536 => 8 GB ≈ 524288)
   PER_GB=65536
 
-  # Extract total RAM in kB
+  # Extract total RAM in kB (MemTotal = total installed RAM, not free RAM)
   MEM_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+  
+  # Debug: Show what we're reading
+  echo "Debug: MemTotal from /proc/meminfo = ${MEM_KB} kB"
 
-  # Convert to GB (whole number)
-  RAM_GB=$((MEM_KB / 1024 / 1024))
+  # Convert to GB and round up to nearest whole number (e.g., 3.8GB -> 4GB)
+  # Using ceil logic: if there's any decimal part, round up
+  RAM_GB=$(awk "BEGIN {ram_gb = $MEM_KB / 1024 / 1024; print (ram_gb == int(ram_gb)) ? int(ram_gb) : int(ram_gb) + 1}")
   [ "$RAM_GB" -lt 1 ] && RAM_GB=1
+  
+  echo "Debug: Calculated RAM_GB = ${RAM_GB} GB (rounded up from $(awk "BEGIN {printf \"%.2f\", $MEM_KB / 1024 / 1024}") GB)"
 
   # Calculate desired limit
   TARGET_MAX=$((RAM_GB * PER_GB))
@@ -70,12 +84,31 @@ body: |
   # SECTION: Set conntrack_max
   # ============================================================================
   SYSCTL_KEY="net.netfilter.nf_conntrack_max"
-  CURRENT=$(sysctl -n "$SYSCTL_KEY" 2>/dev/null || echo 0)
-  if [ "$CURRENT" -ne "$TARGET_MAX" ]; then
-      echo "Setting $SYSCTL_KEY=$TARGET_MAX (RAM=${RAM_GB}G, was=$CURRENT)"
-      sysctl -w "$SYSCTL_KEY=$TARGET_MAX" >/dev/null
-  else
-      echo "$SYSCTL_KEY already $CURRENT, nothing to do."
+  
+  # Load nf_conntrack module if not already loaded
+  if ! lsmod | grep -q "^nf_conntrack "; then
+      echo "Loading nf_conntrack module..."
+      if modprobe nf_conntrack 2>/dev/null; then
+          # Wait a moment for module to fully initialize and create sysctl parameters
+          sleep 1
+          echo "nf_conntrack module loaded successfully"
+      else
+          echo "Warning: Could not load nf_conntrack module. Skipping conntrack_max setting."
+          SYSCTL_KEY=""
+      fi
+  fi
+  
+  # Only set conntrack_max if parameter exists (module is loaded)
+  if [ -n "$SYSCTL_KEY" ] && [ -f "/proc/sys/net/netfilter/nf_conntrack_max" ]; then
+      CURRENT=$(sysctl -n "$SYSCTL_KEY" 2>/dev/null || echo 0)
+      if [ "$CURRENT" -ne "$TARGET_MAX" ]; then
+          echo "Setting $SYSCTL_KEY=$TARGET_MAX (RAM=${RAM_GB}G, was=$CURRENT)"
+          sysctl -w "$SYSCTL_KEY=$TARGET_MAX" >/dev/null
+      else
+          echo "$SYSCTL_KEY already $CURRENT, nothing to do."
+      fi
+  elif [ -n "$SYSCTL_KEY" ]; then
+      echo "Warning: nf_conntrack_max parameter not available even after loading module. Module may not be supported on this system."
   fi
 
   # ============================================================================
