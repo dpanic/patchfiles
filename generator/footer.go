@@ -56,7 +56,7 @@ const (
 	{{ end }}	
 
 	{{ if eq .ScriptFor "REVERTING" }}
-		rm -rf > {{.PatchFilesControlFile}};
+		rm -f {{.PatchFilesControlFile}};
 	{{ end }}	
 `
 )

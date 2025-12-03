@@ -26,6 +26,13 @@ const (
 	args=("$@")
 	category="${args[0]}"
 
+	{{ if eq .ScriptFor "PATCHING" }}
+		if test -f "{{.PatchFilesControlFile}}"; then
+			echo "System already patched exiting"
+			exit 0
+		fi
+	{{ end }}	
+
 	{{ if eq .ScriptFor "REVERTING" }}
 		if test ! -f "{{.PatchFilesControlFile}}"; then
 			echo "System is not patched. Exiting."
@@ -51,7 +58,7 @@ type Header struct {
 // and includes logic to check if the system is already patched (for PATCHING) or not patched (for REVERTING).
 func (generator *Generator) writeHeader(fd *os.File, scriptFor string) (err error) {
 	logger := generator.Log.WithOptions(zap.Fields())
-	logger.Debug("attempt to write footer",
+	logger.Debug("attempt to write header",
 		zap.String("scriptFor", scriptFor),
 	)
 
