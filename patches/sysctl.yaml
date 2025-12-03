@@ -12,6 +12,7 @@ description:
 body: |
   kernel.sysrq = 0
 
+  # Note: fs.file-max is overridden dynamically by autotune.yaml based on RAM
   fs.file-max = 2097152
   fs.inotify.max_user_watches = 524288
 
@@ -76,8 +77,10 @@ body: |
   net.ipv4.tcp_low_latency = 1
 
   # Connection tracking
+  # Note: net.netfilter.nf_conntrack_max is overridden dynamically by autotune.yaml based on RAM
   net.netfilter.nf_conntrack_max = 2097152
   net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
+  # Note: net.ipv4.tcp_max_tw_buckets is overridden dynamically by autotune.yaml based on RAM
   net.ipv4.tcp_max_tw_buckets = 2097152
 
   # FIN and TIME_WAIT handling
@@ -88,4 +91,3 @@ body: |
   net.ipv4.tcp_keepalive_time = 30
   net.ipv4.tcp_keepalive_intvl = 5
   net.ipv4.tcp_keepalive_probes = 3
-

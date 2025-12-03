@@ -1,0 +1,114 @@
+output: /usr/bin/autotune.sh
+categories: 
+  - networking
+  - performance
+mode: overwrite
+commentCharacter: "#"
+commandsAfter: 
+  - chmod +x /usr/bin/autotune.sh
+  - |
+    # Add script call to /etc/rc.local
+    SCRIPT_CALL="/usr/bin/autotune.sh"
+    RC_LOCAL="/etc/rc.local"
+    
+    # Ensure /etc/rc.local exists with proper structure
+    if [ ! -f "$RC_LOCAL" ]; then
+      echo '#!/bin/bash' > "$RC_LOCAL"
+      echo 'exit 0' >> "$RC_LOCAL"
+    fi
+    
+    # Add shebang if missing
+    if ! grep -qE '^#!/bin/(bash|sh)' "$RC_LOCAL" && ! grep -q '^#!/usr/bin/env bash' "$RC_LOCAL"; then
+      sed -i '1i#!/bin/bash' "$RC_LOCAL"
+    fi
+    
+    # Add script call if not already present
+    if ! grep -q "$SCRIPT_CALL" "$RC_LOCAL"; then
+      # Move exit 0 to end if it exists
+      if grep -q '^exit 0' "$RC_LOCAL"; then
+        TEMP_FILE=$(mktemp)
+        grep -v '^exit 0' "$RC_LOCAL" > "$TEMP_FILE" || true
+        cat "$TEMP_FILE" > "$RC_LOCAL"
+        rm -f "$TEMP_FILE"
+      fi
+      # Add script call before exit 0
+      echo "$SCRIPT_CALL" >> "$RC_LOCAL"
+      echo 'exit 0' >> "$RC_LOCAL"
+    fi
+    
+    chmod +x "$RC_LOCAL"
+description:
+  configure conntrack_max, tcp_max_tw_buckets, and fs.file-max dynamically based on available RAM. creates script in /usr/bin/autotune.sh and adds it to /etc/rc.local to run at boot time.
+body: |
+  #!/usr/bin/env bash
+
+  set -euo pipefail
+
+  # PATCHFILES START - autotune configuration
+  # Minimum number of conntrack entries
+  MIN_CONNTRACK=65536
+
+  # Number of entries per 1 GB RAM (e.g., 65536 => 8 GB ≈ 524288)
+  PER_GB=65536
+
+  # Extract total RAM in kB
+  MEM_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+
+  # Convert to GB (whole number)
+  RAM_GB=$((MEM_KB / 1024 / 1024))
+  [ "$RAM_GB" -lt 1 ] && RAM_GB=1
+
+  # Calculate desired limit
+  TARGET_MAX=$((RAM_GB * PER_GB))
+
+  # Apply minimum limit
+  if [ "$TARGET_MAX" -lt "$MIN_CONNTRACK" ]; then
+      TARGET_MAX=$MIN_CONNTRACK
+  fi
+
+  # ============================================================================
+  # SECTION: Set conntrack_max
+  # ============================================================================
+  SYSCTL_KEY="net.netfilter.nf_conntrack_max"
+  CURRENT=$(sysctl -n "$SYSCTL_KEY" 2>/dev/null || echo 0)
+  if [ "$CURRENT" -ne "$TARGET_MAX" ]; then
+      echo "Setting $SYSCTL_KEY=$TARGET_MAX (RAM=${RAM_GB}G, was=$CURRENT)"
+      sysctl -w "$SYSCTL_KEY=$TARGET_MAX" >/dev/null
+  else
+      echo "$SYSCTL_KEY already $CURRENT, nothing to do."
+  fi
+
+  # ============================================================================
+  # SECTION: Set tcp_max_tw_buckets
+  # ============================================================================
+  # Should match or be close to conntrack_max
+  TCP_MAX_TW_KEY="net.ipv4.tcp_max_tw_buckets"
+  TCP_MAX_TW_CURRENT=$(sysctl -n "$TCP_MAX_TW_KEY" 2>/dev/null || echo 0)
+  if [ "$TCP_MAX_TW_CURRENT" -ne "$TARGET_MAX" ]; then
+      echo "Setting $TCP_MAX_TW_KEY=$TARGET_MAX (RAM=${RAM_GB}G, was=$TCP_MAX_TW_CURRENT)"
+      sysctl -w "$TCP_MAX_TW_KEY=$TARGET_MAX" >/dev/null
+  else
+      echo "$TCP_MAX_TW_KEY already $TCP_MAX_TW_CURRENT, nothing to do."
+  fi
+
+  # ============================================================================
+  # SECTION: Set fs.file-max
+  # ============================================================================
+  # Formula: RAM_GB * 262144 (e.g., 8 GB = 2097152)
+  FILE_MAX_PER_GB=262144
+  FILE_MAX_TARGET=$((RAM_GB * FILE_MAX_PER_GB))
+  FILE_MAX_MIN=1048576
+  if [ "$FILE_MAX_TARGET" -lt "$FILE_MAX_MIN" ]; then
+      FILE_MAX_TARGET=$FILE_MAX_MIN
+  fi
+
+  FILE_MAX_KEY="fs.file-max"
+  FILE_MAX_CURRENT=$(sysctl -n "$FILE_MAX_KEY" 2>/dev/null || echo 0)
+  if [ "$FILE_MAX_CURRENT" -ne "$FILE_MAX_TARGET" ]; then
+      echo "Setting $FILE_MAX_KEY=$FILE_MAX_TARGET (RAM=${RAM_GB}G, was=$FILE_MAX_CURRENT)"
+      sysctl -w "$FILE_MAX_KEY=$FILE_MAX_TARGET" >/dev/null
+  else
+      echo "$FILE_MAX_KEY already $FILE_MAX_CURRENT, nothing to do."
+  fi
+  # PATCHFILES END - autotune configuration
+
