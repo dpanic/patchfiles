@@ -1,27 +1,32 @@
+// Package generator generates patch and revert bash scripts from YAML patch definitions.
 package generator
 
 import (
 	"fmt"
 	"os"
-	"patchfiles/parser"
 	"strings"
+
+	"patchfiles/parser"
 
 	"go.uber.org/zap"
 )
 
+// Generator manages the generation of patch and revert bash scripts from YAML definitions.
 type Generator struct {
-	Log         *zap.Logger
-	Environment string
+	Log         *zap.Logger // Logger instance for logging operations
+	Environment string      // Environment name (dev, prod, etc.)
 
-	n          map[string]string
-	names      []string
-	c          map[string]string
-	categories []string
-	fdPatch    *os.File
-	fdRevert   *os.File
+	n          map[string]string // Map of patch names for tracking
+	names      []string          // List of all patch names
+	c          map[string]string // Map of categories for tracking
+	categories []string          // List of all categories
+	fdPatch    *os.File          // File descriptor for patch script
+	fdRevert   *os.File          // File descriptor for revert script
 }
 
-// Open opens both patch and revert file descriptors
+// Open creates and opens file descriptors for both patch and revert bash scripts.
+// It creates patch.sh (or patch_dev.sh in dev environment) and revert.sh (or revert_dev.sh).
+// Each file is created with executable permissions and gets a header written to it.
 func (generator *Generator) Open() {
 	files := []string{
 		"patch",
@@ -37,7 +42,7 @@ func (generator *Generator) Open() {
 			fileLoc = fmt.Sprintf("%s_dev.sh", name)
 		}
 		fd, err := os.Create(fileLoc)
-		os.Chmod(fileLoc, 0755)
+		os.Chmod(fileLoc, 0o755)
 
 		if name == "patch" {
 			generator.fdPatch = fd
@@ -61,10 +66,10 @@ func (generator *Generator) Open() {
 			}
 		}
 	}
-
 }
 
-// Close closes opened file descriptors for
+// Close writes footers to both patch and revert scripts, then closes and syncs the file descriptors.
+// It collects all patch names and categories for the footer help output before closing.
 func (generator *Generator) Close() {
 	for name := range generator.n {
 		generator.names = append(generator.names, name)
@@ -82,7 +87,6 @@ func (generator *Generator) Close() {
 		var err error
 		if name == "patch" {
 			err = generator.writeFooter(generator.fdPatch, action)
-
 		} else {
 			err = generator.writeFooter(generator.fdRevert, action)
 		}
@@ -105,7 +109,7 @@ func (generator *Generator) Close() {
 	}
 }
 
-// Save generates output for a patch and revert
+// Write generates output for a patch and revert script.
 func (generator *Generator) Write(p *parser.Result) {
 	generator.n[p.Name] = ""
 	for _, category := range p.Patch.Categories {

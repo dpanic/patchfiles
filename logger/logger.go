@@ -1,3 +1,4 @@
+// Package logger provides logging functionality using zap logger.
 package logger
 
 import (
@@ -5,7 +6,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// configure will return instance of zap logger configuration, configured to be verbose or to use JSON formatting
+// Setup returns an instance of zap logger configuration, configured to be verbose or to use JSON formatting.
 func Setup(verbose bool) (logger *zap.Logger, err error) {
 	level := zapcore.InfoLevel
 	if verbose {

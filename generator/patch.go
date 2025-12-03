@@ -4,29 +4,33 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"patchfiles/parser"
 	"strings"
 	"text/template"
+
+	"patchfiles/parser"
 
 	"go.uber.org/zap"
 )
 
+// PatchItem contains template data for generating a single patch command in the bash script.
 type PatchItem struct {
-	NameShort        string
-	NameLong         string
-	Description      string
-	Body             string
-	Payload          string
-	WriteMode        string
-	Output           string
-	Categories       []string
-	CategoriesIfCase string
-	CommandsAfter    []string
+	NameShort        string   // Short name of the patch (first part before underscore)
+	NameLong         string   // Full name of the patch
+	Description      string   // Human-readable description of the patch
+	Body             string   // Commented body content for display in generated script
+	Payload          string   // Base64-encoded payload to write to target file
+	WriteMode        string   // Bash write mode: ">" for overwrite, ">>" for append
+	Output           string   // Target file path where patch will be applied
+	Categories       []string // List of categories this patch belongs to
+	CategoriesIfCase string   // Generated if-case string for category matching
+	CommandsAfter    []string // Commands to execute after applying the patch
 }
 
 const (
+	// patchFilesControlFile is the path to the control file that tracks whether the system has been patched.
 	patchFilesControlFile = "/patchfile"
-	templatePatchItem     = `
+	// templatePatchItem is the bash script template for a single patch command block.
+	templatePatchItem = `
 	#
 	# COMMAND '{{.NameLong}}'
 	# 
@@ -43,15 +47,37 @@ const (
 		echo -e "\n\n\n";
 		echo "Patching '{{.NameLong}}'";
 		
-		echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
-
-		{{ range $command := .CommandsAfter }}
-			{{$command}}
+		SKIP_PATCH=0
+		{{ if eq .WriteMode ">>" }}
+		# Check if already patched (append mode)
+		if grep -q "PATCHFILES START" "{{.Output}}" 2>/dev/null; then
+			echo "Warning: '{{.NameLong}}' appears to be already patched. Skipping to avoid duplicates."
+			echo "If you want to re-apply, use revert first or manually remove PATCHFILES START/END blocks."
+			SKIP_PATCH=1
+		fi
+		{{ else }}
+		# Check if already patched (overwrite mode)
+		if [ -f "{{.Output}}.oldpatchfile" ]; then
+			echo "Warning: '{{.NameLong}}' appears to be already patched (backup file exists). Skipping to avoid overwriting backup."
+			echo "If you want to re-apply, use revert first or manually remove {{.Output}}.oldpatchfile"
+			SKIP_PATCH=1
+		fi
 		{{ end }}
+		
+		if [ "$SKIP_PATCH" -eq 0 ]; then
+			echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
+
+			{{ range $command := .CommandsAfter }}
+				{{$command}}
+			{{ end }}
+		fi
 	fi
 `
 )
 
+// writePatch generates a patch command block for the bash script from a parsed patch definition.
+// It encodes the patch body as base64, determines write mode (overwrite/append), creates backup for overwrite mode,
+// generates category matching logic, and writes the patch command template to the patch script file.
 func (generator *Generator) writePatch(p *parser.Result) (err error) {
 	logger := generator.Log.WithOptions(zap.Fields(
 		zap.String("fileLoc", *p.FileLoc),
@@ -94,9 +120,7 @@ func (generator *Generator) writePatch(p *parser.Result) (err error) {
 		categoriesIfCase = " || " + categoriesIfCase
 	}
 
-	var (
-		buf = new(bytes.Buffer)
-	)
+	buf := new(bytes.Buffer)
 	tpl, err := template.New("template").Parse(templatePatchItem)
 	if err != nil {
 		return

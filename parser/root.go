@@ -1,3 +1,4 @@
+// Package parser parses YAML patch definitions and provides parsing results.
 package parser
 
 import (
@@ -12,20 +13,26 @@ import (
 )
 
 const (
+	// patchesDir is the directory name where patch YAML files are stored in the embedded filesystem.
 	patchesDir = "patches"
 )
 
+// Error represents a parsing error with the file location where it occurred.
 type Error struct {
-	Error   error
-	FileLoc *string
+	Error   error   // The parsing error that occurred
+	FileLoc *string // Location of the file that caused the error
 }
 
+// Result represents a successfully parsed patch file with its metadata.
 type Result struct {
-	Name    string
-	FileLoc *string
-	Patch   *Patch
+	Name    string  // Name of the patch (derived from filename)
+	FileLoc *string // Location of the parsed YAML file
+	Patch   *Patch  // Parsed patch definition
 }
 
+// Run parses all YAML patch files from the embedded filesystem and returns channels for errors and results.
+// It reads all files from the patches directory, parses each one in a goroutine, and sends parsed results
+// or errors through the respective channels. The function waits for all files to be processed before canceling the context.
 func Run(log *zap.Logger, cancel *context.CancelFunc, content embed.FS) (errors chan *Error, results chan *Result) {
 	var res []fs.DirEntry
 	errors = make(chan *Error, 100)
@@ -47,14 +54,14 @@ func Run(log *zap.Logger, cancel *context.CancelFunc, content embed.FS) (errors 
 			fileName := filepath.Base(entry.Name())
 			fileName = strings.Split(fileName, ".")[0]
 
-			log := log.WithOptions(zap.Fields(
+			logger := log.WithOptions(zap.Fields(
 				zap.String("fileLoc", fileLoc),
 			))
-			log.Debug("attempt to parse file")
+			logger.Debug("attempt to parse file")
 
 			body, err := content.ReadFile(fileLoc)
 			if err != nil {
-				log.Error("error in reading",
+				logger.Error("error in reading",
 					zap.Error(err),
 				)
 
@@ -68,7 +75,7 @@ func Run(log *zap.Logger, cancel *context.CancelFunc, content embed.FS) (errors 
 
 			patch, err := parse(body)
 			if err != nil {
-				log.Error("error in parsing",
+				logger.Error("error in parsing",
 					zap.Error(err),
 				)
 
@@ -86,7 +93,7 @@ func Run(log *zap.Logger, cancel *context.CancelFunc, content embed.FS) (errors 
 				Patch:   patch,
 			}
 
-			log.Info("successfully parsed file")
+			logger.Info("successfully parsed file")
 			results <- &r
 		}
 
