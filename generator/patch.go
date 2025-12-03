@@ -12,17 +12,18 @@ import (
 	"go.uber.org/zap"
 )
 
+// PatchItem contains template data for generating a single patch command in the bash script.
 type PatchItem struct {
-	NameShort        string
-	NameLong         string
-	Description      string
-	Body             string
-	Payload          string
-	WriteMode        string
-	Output           string
-	Categories       []string
-	CategoriesIfCase string
-	CommandsAfter    []string
+	NameShort        string   // Short name of the patch (first part before underscore)
+	NameLong         string   // Full name of the patch
+	Description      string   // Human-readable description of the patch
+	Body             string   // Commented body content for display in generated script
+	Payload          string   // Base64-encoded payload to write to target file
+	WriteMode        string   // Bash write mode: ">" for overwrite, ">>" for append
+	Output           string   // Target file path where patch will be applied
+	Categories       []string // List of categories this patch belongs to
+	CategoriesIfCase string   // Generated if-case string for category matching
+	CommandsAfter    []string // Commands to execute after applying the patch
 }
 
 const (

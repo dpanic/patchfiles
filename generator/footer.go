@@ -9,11 +9,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// Footer contains template data for generating script footers.
 type Footer struct {
-	Names                 []string
-	Categories            []string
-	ScriptFor             string
-	PatchFilesControlFile string
+	Names                 []string // List of all patch names for help output
+	Categories            []string // List of all categories for help output
+	ScriptFor             string   // Action type: "PATCHING" or "REVERTING"
+	PatchFilesControlFile string   // Path to control file that tracks patch status
 }
 
 const (
@@ -65,9 +66,7 @@ func (generator *Generator) writeFooter(fd *os.File, scriptFor string) (err erro
 		zap.String("scriptFor", scriptFor),
 	)
 
-	var (
-		buf = new(bytes.Buffer)
-	)
+	buf := new(bytes.Buffer)
 
 	tpl, err := template.New("template").Parse(templateFooter)
 

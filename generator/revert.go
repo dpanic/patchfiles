@@ -3,21 +3,23 @@ package generator
 import (
 	"bytes"
 	"fmt"
-	"patchfiles/parser"
 	"strings"
 	"text/template"
+
+	"patchfiles/parser"
 
 	"go.uber.org/zap"
 )
 
+// RevertItem contains template data for generating a single revert command in the bash script.
 type RevertItem struct {
-	NameShort        string
-	NameLong         string
-	Description      string
-	Categories       []string
-	CategoriesIfCase string
-	Command          string
-	CommandsAfter    []string
+	NameShort        string   // Short name of the patch (first part before underscore)
+	NameLong         string   // Full name of the patch
+	Description      string   // Human-readable description of the patch
+	Categories       []string // List of categories this patch belongs to
+	CategoriesIfCase string   // Generated if-case string for category matching
+	Command          string   // Bash command to revert the patch
+	CommandsAfter    []string // Commands to execute after reverting the patch
 }
 
 const (
@@ -69,9 +71,7 @@ func (generator *Generator) writeRevert(p *parser.Result) (err error) {
 		command += fmt.Sprintf("sed -i -e '/%s/,/%s/c\\' %s", start, end, p.Patch.Output)
 	}
 
-	var (
-		buf = new(bytes.Buffer)
-	)
+	buf := new(bytes.Buffer)
 	tpl, err := template.New("template").Parse(templateRevertItem)
 	if err != nil {
 		return

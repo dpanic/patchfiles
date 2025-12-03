@@ -11,16 +11,17 @@ import (
 	"go.uber.org/zap"
 )
 
+// Generator manages the generation of patch and revert bash scripts from YAML definitions.
 type Generator struct {
-	Log         *zap.Logger
-	Environment string
+	Log         *zap.Logger // Logger instance for logging operations
+	Environment string      // Environment name (dev, prod, etc.)
 
-	n          map[string]string
-	names      []string
-	c          map[string]string
-	categories []string
-	fdPatch    *os.File
-	fdRevert   *os.File
+	n          map[string]string // Map of patch names for tracking
+	names      []string          // List of all patch names
+	c          map[string]string // Map of categories for tracking
+	categories []string          // List of all categories
+	fdPatch    *os.File          // File descriptor for patch script
+	fdRevert   *os.File          // File descriptor for revert script
 }
 
 // Open opens both patch and revert file descriptors
@@ -105,7 +106,7 @@ func (generator *Generator) Close() {
 	}
 }
 
-// Save generates output for a patch and revert
+// Write generates output for a patch and revert script.
 func (generator *Generator) Write(p *parser.Result) {
 	generator.n[p.Name] = ""
 	for _, category := range p.Patch.Categories {

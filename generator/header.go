@@ -35,13 +35,14 @@ const (
 	`
 )
 
+// Header contains template data for generating script headers.
 type Header struct {
-	ScriptFor             string
-	Author                string
-	Version               string
-	Environment           string
-	Built                 string
-	PatchFilesControlFile string
+	ScriptFor             string // Action type: "PATCHING" or "REVERTING"
+	Author                string // Author name from environment variable
+	Version               string // Version from environment variable
+	Environment           string // Environment name (dev, prod, etc.)
+	Built                 string // Build timestamp in UTC
+	PatchFilesControlFile string // Path to control file that tracks patch status
 }
 
 // generateHeader generates header based on input parameters
