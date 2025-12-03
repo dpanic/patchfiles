@@ -1,10 +1,12 @@
+// Package generator generates patch and revert bash scripts from YAML patch definitions.
 package generator
 
 import (
 	"fmt"
 	"os"
-	"patchfiles/parser"
 	"strings"
+
+	"patchfiles/parser"
 
 	"go.uber.org/zap"
 )
@@ -37,7 +39,7 @@ func (generator *Generator) Open() {
 			fileLoc = fmt.Sprintf("%s_dev.sh", name)
 		}
 		fd, err := os.Create(fileLoc)
-		os.Chmod(fileLoc, 0755)
+		os.Chmod(fileLoc, 0o755)
 
 		if name == "patch" {
 			generator.fdPatch = fd
@@ -61,7 +63,6 @@ func (generator *Generator) Open() {
 			}
 		}
 	}
-
 }
 
 // Close closes opened file descriptors for
@@ -82,7 +83,6 @@ func (generator *Generator) Close() {
 		var err error
 		if name == "patch" {
 			err = generator.writeFooter(generator.fdPatch, action)
-
 		} else {
 			err = generator.writeFooter(generator.fdRevert, action)
 		}
