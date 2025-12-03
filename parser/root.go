@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	// patchesDir is the directory name where patch YAML files are stored in the embedded filesystem.
 	patchesDir = "patches"
 )
 
@@ -29,6 +30,9 @@ type Result struct {
 	Patch   *Patch  // Parsed patch definition
 }
 
+// Run parses all YAML patch files from the embedded filesystem and returns channels for errors and results.
+// It reads all files from the patches directory, parses each one in a goroutine, and sends parsed results
+// or errors through the respective channels. The function waits for all files to be processed before canceling the context.
 func Run(log *zap.Logger, cancel *context.CancelFunc, content embed.FS) (errors chan *Error, results chan *Result) {
 	var res []fs.DirEntry
 	errors = make(chan *Error, 100)

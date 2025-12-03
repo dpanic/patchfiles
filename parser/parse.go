@@ -18,7 +18,8 @@ type Patch struct {
 	Description      string   `yaml:"description"`      // Human-readable description of the patch
 }
 
-// parse function parses desired file to structure
+// parse unmarshals YAML content into a Patch structure.
+// It takes raw YAML bytes and returns a parsed Patch struct or an error if parsing fails.
 func parse(body []byte) (patch *Patch, err error) {
 	err = yaml.Unmarshal(body, &patch)
 

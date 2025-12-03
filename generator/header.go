@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	// templateHeader is the bash script template for the header section of patch/revert scripts.
 	templateHeader = `#!/usr/bin/env bash
 	#
 	# PATCHFILES SCRIPT FOR {{.ScriptFor}}
@@ -45,7 +46,9 @@ type Header struct {
 	PatchFilesControlFile string // Path to control file that tracks patch status
 }
 
-// generateHeader generates header based on input parameters
+// writeHeader generates and writes the bash script header to the given file descriptor.
+// It creates a header with script metadata (author, version, environment, build time)
+// and includes logic to check if the system is already patched (for PATCHING) or not patched (for REVERTING).
 func (generator *Generator) writeHeader(fd *os.File, scriptFor string) (err error) {
 	logger := generator.Log.WithOptions(zap.Fields())
 	logger.Debug("attempt to write footer",

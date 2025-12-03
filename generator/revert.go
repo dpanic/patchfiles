@@ -23,6 +23,7 @@ type RevertItem struct {
 }
 
 const (
+	// templateRevertItem is the bash script template for a single revert command block.
 	templateRevertItem = `
 	#
 	# COMMAND '{{.NameLong}}'
@@ -47,6 +48,9 @@ const (
 `
 )
 
+// writeRevert generates a revert command block for the bash script from a parsed patch definition.
+// For overwrite mode, it restores the backup file. For append mode, it removes the PATCHFILES START/END block.
+// It generates category matching logic and writes the revert command template to the revert script file.
 func (generator *Generator) writeRevert(p *parser.Result) (err error) {
 	logger := generator.Log.WithOptions(zap.Fields(
 		zap.String("fileLoc", *p.FileLoc),

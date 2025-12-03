@@ -27,8 +27,10 @@ type PatchItem struct {
 }
 
 const (
+	// patchFilesControlFile is the path to the control file that tracks whether the system has been patched.
 	patchFilesControlFile = "/patchfile"
-	templatePatchItem     = `
+	// templatePatchItem is the bash script template for a single patch command block.
+	templatePatchItem = `
 	#
 	# COMMAND '{{.NameLong}}'
 	# 
@@ -69,16 +71,13 @@ const (
 				{{$command}}
 			{{ end }}
 		fi
-		
-		echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
-
-		{{ range $command := .CommandsAfter }}
-			{{$command}}
-		{{ end }}
 	fi
 `
 )
 
+// writePatch generates a patch command block for the bash script from a parsed patch definition.
+// It encodes the patch body as base64, determines write mode (overwrite/append), creates backup for overwrite mode,
+// generates category matching logic, and writes the patch command template to the patch script file.
 func (generator *Generator) writePatch(p *parser.Result) (err error) {
 	logger := generator.Log.WithOptions(zap.Fields(
 		zap.String("fileLoc", *p.FileLoc),

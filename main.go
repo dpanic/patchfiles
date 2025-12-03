@@ -19,11 +19,14 @@ import (
 
 var (
 	//go:embed patches/*.yaml
+	// content is the embedded filesystem containing all YAML patch definition files.
 	content embed.FS
+	// verbose controls whether the logger should output debug-level messages.
 	verbose = flag.Bool("VERBOSE", true, "disable or enable verbose")
 )
 
 const (
+	// contextTimeout is the maximum time to wait for parsing to complete before canceling.
 	contextTimeout = 10 * time.Second
 )
 

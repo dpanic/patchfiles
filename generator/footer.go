@@ -18,6 +18,7 @@ type Footer struct {
 }
 
 const (
+	// templateFooter is the bash script template for the footer section of patch/revert scripts.
 	templateFooter = `
 	function help_me() {
 		echo -e "\n\n";
@@ -60,6 +61,9 @@ const (
 `
 )
 
+// writeFooter generates and writes the bash script footer to the given file descriptor.
+// It includes a help function, category/patch listing, and logic to create/remove the control file
+// that tracks whether the system has been patched.
 func (generator *Generator) writeFooter(fd *os.File, scriptFor string) (err error) {
 	logger := generator.Log.WithOptions(zap.Fields())
 	logger.Debug("attempt to write footer",

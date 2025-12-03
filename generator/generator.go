@@ -24,7 +24,9 @@ type Generator struct {
 	fdRevert   *os.File          // File descriptor for revert script
 }
 
-// Open opens both patch and revert file descriptors
+// Open creates and opens file descriptors for both patch and revert bash scripts.
+// It creates patch.sh (or patch_dev.sh in dev environment) and revert.sh (or revert_dev.sh).
+// Each file is created with executable permissions and gets a header written to it.
 func (generator *Generator) Open() {
 	files := []string{
 		"patch",
@@ -66,7 +68,8 @@ func (generator *Generator) Open() {
 	}
 }
 
-// Close closes opened file descriptors for
+// Close writes footers to both patch and revert scripts, then closes and syncs the file descriptors.
+// It collects all patch names and categories for the footer help output before closing.
 func (generator *Generator) Close() {
 	for name := range generator.n {
 		generator.names = append(generator.names, name)
