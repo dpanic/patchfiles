@@ -79,7 +79,20 @@ body: |
   # Connection tracking
   # Note: net.netfilter.nf_conntrack_max is overridden dynamically by autotune.yaml based on RAM
   net.netfilter.nf_conntrack_max = 2097152
-  net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
+
+  # Aggressive nf_conntrack cleanup to reduce connection tracking table size
+  # CRITICAL: Established timeout reduced from default 5 days (432000s) to 10 minutes
+  # This is the most important setting for reducing nf_conntrack_count
+  net.netfilter.nf_conntrack_tcp_timeout_established = 600    # 10 minutes (default: 432000s = 5 days)
+
+  # Other TCP state timeouts for aggressive cleanup
+  net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30       # TIME_WAIT state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_close_wait = 60     # CLOSE_WAIT state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120      # FIN_WAIT state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 120      # SYN_SENT state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_syn_recv = 60       # SYN_RECV state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_unacknowledged = 300 # Unacknowledged connection timeout
+
   # Note: net.ipv4.tcp_max_tw_buckets is overridden dynamically by autotune.yaml based on RAM
   net.ipv4.tcp_max_tw_buckets = 2097152
 
