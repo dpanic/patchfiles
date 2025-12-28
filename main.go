@@ -1,3 +1,6 @@
+// Package main is the entry point for patchfiles, a tool that generates patch and revert
+// bash scripts from YAML patch definitions. It reads YAML files from an embedded filesystem,
+// parses them, and generates executable bash scripts for applying and reverting system patches.
 package main
 
 import (
@@ -30,6 +33,9 @@ const (
 	contextTimeout = 10 * time.Second
 )
 
+// main initializes the logger, sets up signal handling for graceful shutdown,
+// determines the environment, creates patch/revert script generators, and processes
+// all YAML patch files from the embedded filesystem.
 func main() {
 	log, _ := logger.Setup(*verbose)
 	defer log.Sync()
