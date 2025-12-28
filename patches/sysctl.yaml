@@ -38,8 +38,8 @@ body: |
   net.core.netdev_budget_usecs = 6000
 
   # General network performance
-  net.core.busy_poll = 0
-  net.core.busy_read = 0
+  net.core.busy_poll = 50
+  net.core.busy_read = 50
   net.ipv4.ipfrag_high_thresh = 8388608
   net.ipv4.tcp_fastopen = 3
 
