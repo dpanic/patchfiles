@@ -17,6 +17,7 @@ body: |
   fs.inotify.max_user_watches = 524288
 
   # Memory management tuning
+  vm.overcommit_memory = 1                        # Disable overcommit
   vm.swappiness = 1                               # Avoid swapping unless necessary
   vm.dirty_ratio = 30                             # Limit max dirty pages to 30%
   vm.dirty_background_ratio = 5                   # Background flush starts at 5%
