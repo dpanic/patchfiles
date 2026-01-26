@@ -16,6 +16,7 @@
 # vendor/
 
 patch_*.sh
+patch.sh
 revert_*.sh
-
+revert.sh
 .husky
