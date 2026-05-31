@@ -15,6 +15,7 @@ body: |
   # Note: fs.file-max is overridden dynamically by autotune.yaml based on RAM
   fs.file-max = 2097152
   fs.inotify.max_user_watches = 524288
+  fs.inotify.max_user_instances = 8192
 
   # Memory management tuning
   vm.overcommit_memory = 1                        # Disable overcommit
