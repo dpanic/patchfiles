@@ -90,9 +90,10 @@ body: |
 
   # Other TCP state timeouts for aggressive cleanup
   net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30       # TIME_WAIT state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_close = 5            # CLOSE state timeout (terminal; finished/reset flows)
   net.netfilter.nf_conntrack_tcp_timeout_close_wait = 60     # CLOSE_WAIT state timeout
   net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120      # FIN_WAIT state timeout
-  net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 30       # SYN_SENT state timeout (lowered from 120 for scan workload)
+  net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 10       # SYN_SENT state timeout (10s; dialer abandons connects at 5s)
   net.netfilter.nf_conntrack_tcp_timeout_syn_recv = 60       # SYN_RECV state timeout
   net.netfilter.nf_conntrack_tcp_timeout_unacknowledged = 300 # Unacknowledged connection timeout
 
