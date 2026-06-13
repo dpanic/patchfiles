@@ -61,6 +61,7 @@ body: |
 
   # TCP settings
   net.ipv4.tcp_max_syn_backlog = 65535
+  net.ipv4.tcp_syn_retries = 3                     # Fail unanswered SYN in ~7-15s (default 6 ~= 127s)
   net.ipv4.tcp_no_metrics_save = 0
   net.ipv4.tcp_moderate_rcvbuf = 1
   net.ipv4.tcp_slow_start_after_idle = 0           # Disable slow start on idle
@@ -91,7 +92,7 @@ body: |
   net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30       # TIME_WAIT state timeout
   net.netfilter.nf_conntrack_tcp_timeout_close_wait = 60     # CLOSE_WAIT state timeout
   net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120      # FIN_WAIT state timeout
-  net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 120      # SYN_SENT state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 30       # SYN_SENT state timeout (lowered from 120 for scan workload)
   net.netfilter.nf_conntrack_tcp_timeout_syn_recv = 60       # SYN_RECV state timeout
   net.netfilter.nf_conntrack_tcp_timeout_unacknowledged = 300 # Unacknowledged connection timeout
 
