@@ -38,9 +38,6 @@ func (generator *Generator) Open() {
 
 	for _, name := range files {
 		fileLoc := fmt.Sprintf("%s.sh", name)
-		if generator.Environment == "dev" {
-			fileLoc = fmt.Sprintf("%s_dev.sh", name)
-		}
 		fd, err := os.Create(fileLoc)
 		os.Chmod(fileLoc, 0o755)
 
