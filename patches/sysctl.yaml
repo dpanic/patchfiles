@@ -6,9 +6,11 @@ categories:
 mode: overwrite
 commentCharacter: "#"
 commandsAfter: 
+  - modprobe tcp_bbr 2>/dev/null || true
+  - modprobe nf_conntrack 2>/dev/null || true
   - sysctl -p
 description:
-  special sysctl.conf kernel tunings. lots of them were collected and tested over the time.
+  special sysctl.conf kernel tunings. lots of them were collected and tested over the time. Requires tcp_bbr + nf_conntrack modules (see modules_load.yaml) so bbr congestion control and the nf_conntrack_* keys actually apply on Ubuntu 26.04 / kernel 7.0.
 body: |
   kernel.sysrq = 0
 
