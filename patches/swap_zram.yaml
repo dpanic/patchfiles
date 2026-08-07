@@ -1,0 +1,64 @@
+output: /etc/sysctl.d/91-zram.conf
+categories:
+  - performance
+mode: overwrite
+createsFile: true
+commentCharacter: "#"
+commandsAfter:
+  - |
+    # zram is the fast tier: compressed swap that lives in RAM. Priority 100 puts it
+    # ahead of any disk swap, which stays as the overflow tier that can actually free RAM.
+    cat > /etc/systemd/zram-generator.conf << 'EOFZRAM'
+    [zram0]
+    zram-size = min(ram / 2, 8192)
+    compression-algorithm = zstd
+    swap-priority = 100
+    EOFZRAM
+  - |
+    # Disk swap: overflow tier. zram pages still occupy RAM, so a disk tier is the only
+    # thing that can move genuinely cold anon pages out of memory entirely.
+    # Idempotent: never touch a host that already has file-backed swap configured.
+    if ! grep -qE '^[^#].*[[:space:]]swap[[:space:]]' /etc/fstab 2>/dev/null && \
+       ! swapon --show=NAME,TYPE --noheadings 2>/dev/null | grep -q 'file'; then
+      SWAP_FS=$(findmnt -no FSTYPE / 2>/dev/null)
+      if [ "$SWAP_FS" = "ext4" ] || [ "$SWAP_FS" = "xfs" ]; then
+        RAM_GB=$(awk '/^MemTotal:/ {printf "%d", ($2/1048576)+0.5}' /proc/meminfo)
+        SWAP_GB=$RAM_GB
+        [ "$SWAP_GB" -gt 16 ] && SWAP_GB=16
+        [ "$SWAP_GB" -lt 2 ] && SWAP_GB=2
+        SWAP_FILE="/swap${SWAP_GB}.img"
+        if [ ! -f "$SWAP_FILE" ]; then
+          echo "creating ${SWAP_GB}G swap file at ${SWAP_FILE}"
+          fallocate -l "${SWAP_GB}G" "$SWAP_FILE" && \
+          chmod 600 "$SWAP_FILE" && \
+          mkswap "$SWAP_FILE" >/dev/null && \
+          echo "$SWAP_FILE none swap sw 0 0" >> /etc/fstab && \
+          swapon "$SWAP_FILE"
+        fi
+      else
+        echo "skipping swap file: root fs is '${SWAP_FS}' (needs ext4/xfs; btrfs requires nocow)"
+      fi
+    else
+      echo "swap already configured in fstab, leaving it alone"
+    fi
+  - systemctl daemon-reload
+  - systemctl start systemd-zram-setup@zram0.service 2>/dev/null || true
+  - sysctl --system >/dev/null
+description: >-
+  zram-first swap tuning plus the swap topology itself. vm.swappiness=100 is only correct
+  when zram exists - on a disk-only host it would thrash - so it ships as its own drop-in
+  alongside the zram setup rather than in sysctl.yaml. Sorts after 90-patchfiles.conf so it
+  wins. Creates the two-tier layout - zram at priority 100 for speed, a disk file at the
+  default priority as the overflow that can actually release RAM. Idempotent, so a host
+  that already has swap in fstab is left untouched.
+body: |
+  # Managed by dpanic/patchfiles - patches/swap_zram.yaml. Do not edit by hand.
+  # Only correct on hosts with zram (see /etc/systemd/zram-generator.conf).
+
+  # Favour compressing cold anon pages into zram over evicting page cache.
+  # The old value of 1 is spinning-disk advice and leaves zram unused.
+  vm.swappiness = 100
+
+  # zram has no seek penalty, so the default readahead of 2^3 = 8 pages just burns
+  # decompression work on pages nobody asked for.
+  vm.page-cluster = 0

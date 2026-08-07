@@ -1,17 +1,41 @@
-output: /etc/sysctl.conf
-categories: 
+output: /etc/sysctl.d/90-patchfiles.conf
+categories:
   - security
   - networking
   - performance
 mode: overwrite
+createsFile: true
 commentCharacter: "#"
-commandsAfter: 
+commandsAfter:
   - modprobe tcp_bbr 2>/dev/null || true
   - modprobe nf_conntrack 2>/dev/null || true
-  - sysctl -p
-description:
-  special sysctl.conf kernel tunings. lots of them were collected and tested over the time. Requires tcp_bbr + nf_conntrack modules (see modules_load.yaml) so bbr congestion control and the nf_conntrack_* keys actually apply on Ubuntu 26.04 / kernel 7.0.
+  - |
+    # Migration: systemd-sysctl never reads /etc/sysctl.conf, so anything we left there
+    # is dead weight. Archive it once and leave a signpost instead of deleting silently.
+    if [ -f /etc/sysctl.conf ] && ! grep -q 'moved to /etc/sysctl.d' /etc/sysctl.conf 2>/dev/null; then
+      cp -a /etc/sysctl.conf /etc/sysctl.conf.pre-sysctld
+      {
+        echo '# patchfiles: these settings moved to /etc/sysctl.d/90-patchfiles.conf'
+        echo '# systemd-sysctl does not read /etc/sysctl.conf - it only scans /etc/sysctl.d,'
+        echo '# /run/sysctl.d, /usr/lib/sysctl.d and /usr/local/lib/sysctl.d.'
+        echo '# Previous content archived at /etc/sysctl.conf.pre-sysctld'
+      } > /etc/sysctl.conf
+    fi
+    # Stale guard file from when this patch targeted /etc/sysctl.conf.
+    rm -f /etc/sysctl.conf.oldpatchfile
+  - sysctl --system >/dev/null
+description: >-
+  special sysctl kernel tunings. lots of them were collected and tested over the time.
+  Ships to /etc/sysctl.d/ because systemd-sysctl does not read /etc/sysctl.conf - on
+  Ubuntu 26.04 procps no longer provides the /etc/sysctl.d/99-sysctl.conf compat symlink,
+  so anything written there is silently ignored on every boot. Requires tcp_bbr +
+  nf_conntrack modules (see modules_load.yaml) so bbr congestion control and the
+  nf_conntrack_* keys actually apply on Ubuntu 26.04 / kernel 7.0. No inline trailing
+  comments below - sysctl treats everything after '=' as the value, so a trailing
+  '# why' makes the write fail with EINVAL.
 body: |
+  # Managed by dpanic/patchfiles - patches/sysctl.yaml. Do not edit by hand.
+
   kernel.sysrq = 0
 
   # Note: fs.file-max is overridden dynamically by autotune.yaml based on RAM
@@ -20,12 +44,17 @@ body: |
   fs.inotify.max_user_instances = 8192
 
   # Memory management tuning
-  vm.overcommit_memory = 1                        # Disable overcommit
-  vm.swappiness = 1                               # Avoid swapping unless necessary
-  vm.dirty_ratio = 30                             # Limit max dirty pages to 30%
-  vm.dirty_background_ratio = 5                   # Background flush starts at 5%
-  vm.max_map_count = 262144
-  vm.vfs_cache_pressure = 50                      # Balance inode/dentry reclaim
+  # Note: vm.swappiness and vm.page-cluster live in swap_zram.yaml - they are only
+  # correct on hosts that actually have zram, so they ship as a separate drop-in.
+  # Note: vm.overcommit_memory is deliberately left at the kernel heuristic (0).
+  # Note: vm.max_map_count is deliberately unset - the distro default (1048576 via
+  # /usr/lib/sysctl.d/50-default.conf) is higher than anything we would pick here.
+  # Limit max dirty pages to 30%
+  vm.dirty_ratio = 30
+  # Background flush starts at 5%
+  vm.dirty_background_ratio = 5
+  # Balance inode/dentry reclaim
+  vm.vfs_cache_pressure = 50
 
   # ICMP hardening
   net.ipv4.icmp_echo_ignore_broadcasts = 1
@@ -63,10 +92,12 @@ body: |
 
   # TCP settings
   net.ipv4.tcp_max_syn_backlog = 65535
-  net.ipv4.tcp_syn_retries = 3                     # Fail unanswered SYN in ~7-15s (default 6 ~= 127s)
+  # Fail unanswered SYN in ~7-15s (default 6 ~= 127s)
+  net.ipv4.tcp_syn_retries = 3
   net.ipv4.tcp_no_metrics_save = 0
   net.ipv4.tcp_moderate_rcvbuf = 1
-  net.ipv4.tcp_slow_start_after_idle = 0           # Disable slow start on idle
+  # Disable slow start on idle
+  net.ipv4.tcp_slow_start_after_idle = 0
 
   # UDP tuning
   net.ipv4.udp_rmem_min = 8192
@@ -88,23 +119,32 @@ body: |
   # Aggressive nf_conntrack cleanup to reduce connection tracking table size
   # CRITICAL: Established timeout reduced from default 5 days (432000s) to 10 minutes
   # This is the most important setting for reducing nf_conntrack_count
-  net.netfilter.nf_conntrack_tcp_timeout_established = 600    # 10 minutes (default: 432000s = 5 days)
+  net.netfilter.nf_conntrack_tcp_timeout_established = 600
 
   # Other TCP state timeouts for aggressive cleanup
-  net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30       # TIME_WAIT state timeout
-  net.netfilter.nf_conntrack_tcp_timeout_close = 5            # CLOSE state timeout (terminal; finished/reset flows)
-  net.netfilter.nf_conntrack_tcp_timeout_close_wait = 60     # CLOSE_WAIT state timeout
-  net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120      # FIN_WAIT state timeout
-  net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 10       # SYN_SENT state timeout (10s; dialer abandons connects at 5s)
-  net.netfilter.nf_conntrack_tcp_timeout_syn_recv = 60       # SYN_RECV state timeout
-  net.netfilter.nf_conntrack_tcp_timeout_unacknowledged = 300 # Unacknowledged connection timeout
+  # TIME_WAIT state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
+  # CLOSE state timeout (terminal; finished/reset flows)
+  net.netfilter.nf_conntrack_tcp_timeout_close = 5
+  # CLOSE_WAIT state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_close_wait = 60
+  # FIN_WAIT state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120
+  # SYN_SENT state timeout (10s; dialer abandons connects at 5s)
+  net.netfilter.nf_conntrack_tcp_timeout_syn_sent = 10
+  # SYN_RECV state timeout
+  net.netfilter.nf_conntrack_tcp_timeout_syn_recv = 60
+  # Unacknowledged connection timeout
+  net.netfilter.nf_conntrack_tcp_timeout_unacknowledged = 300
 
   # Note: net.ipv4.tcp_max_tw_buckets is overridden dynamically by autotune.yaml based on RAM
   net.ipv4.tcp_max_tw_buckets = 2097152
 
   # FIN and TIME_WAIT handling
-  net.ipv4.tcp_fin_timeout = 20                    # Slightly more conservative
-  net.ipv4.tcp_tw_reuse = 0                        # Disabled to avoid reuse bugs
+  # Slightly more conservative
+  net.ipv4.tcp_fin_timeout = 20
+  # Disabled to avoid reuse bugs
+  net.ipv4.tcp_tw_reuse = 0
 
   # TCP keepalive tuning
   net.ipv4.tcp_keepalive_time = 30
