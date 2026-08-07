@@ -6,6 +6,16 @@ createsFile: true
 commentCharacter: "#"
 commandsAfter:
   - |
+    # systemd-zram-generator lives in universe and nothing pulls it in, so it is absent on
+    # a default Ubuntu of any release. Without it the config below is inert, no zram is
+    # ever created, and the drop-in would leave a disk-only host swapping at swappiness
+    # 100 - the exact thrashing this patch exists to avoid. Try to install it.
+    ZRAM_GEN=/usr/lib/systemd/system-generators/zram-generator
+    if [ ! -x "$ZRAM_GEN" ]; then
+      echo "systemd-zram-generator missing, installing"
+      (apt-get update -qq && apt-get install -y -qq systemd-zram-generator) >/dev/null 2>&1 || true
+    fi
+  - |
     # zram is the fast tier: compressed swap that lives in RAM. Priority 100 puts it
     # ahead of any disk swap, which stays as the overflow tier that can actually free RAM.
     cat > /etc/systemd/zram-generator.conf << 'EOFZRAM'
@@ -43,6 +53,13 @@ commandsAfter:
     fi
   - systemctl daemon-reload
   - systemctl start systemd-zram-setup@zram0.service 2>/dev/null || true
+  - |
+    # Last word on swappiness: only keep the drop-in if zram actually materialised.
+    # Better to fall back to the kernel default than to tune for a tier that is not there.
+    if [ ! -e /dev/zram0 ] && [ ! -x /usr/lib/systemd/system-generators/zram-generator ]; then
+      echo "WARNING: no zram on this host - removing 91-zram.conf so vm.swappiness stays at the kernel default"
+      rm -f /etc/sysctl.d/91-zram.conf
+    fi
   - sysctl --system >/dev/null
 description: >-
   zram-first swap tuning plus the swap topology itself. vm.swappiness=100 is only correct

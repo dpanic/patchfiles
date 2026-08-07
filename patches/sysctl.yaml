@@ -26,9 +26,10 @@ commandsAfter:
   - sysctl --system >/dev/null
 description: >-
   special sysctl kernel tunings. lots of them were collected and tested over the time.
-  Ships to /etc/sysctl.d/ because systemd-sysctl does not read /etc/sysctl.conf - on
-  Ubuntu 26.04 procps no longer provides the /etc/sysctl.d/99-sysctl.conf compat symlink,
-  so anything written there is silently ignored on every boot. Requires tcp_bbr +
+  Ships to /etc/sysctl.d/ because systemd-sysctl does not read /etc/sysctl.conf. Up to
+  Ubuntu 24.04 the systemd package shipped an /etc/sysctl.d/99-sysctl.conf symlink that
+  pulled it into the scan; systemd 259 on Ubuntu 26.04 dropped it, so anything written
+  there is silently ignored on every boot. Requires tcp_bbr +
   nf_conntrack modules (see modules_load.yaml) so bbr congestion control and the
   nf_conntrack_* keys actually apply on Ubuntu 26.04 / kernel 7.0. No inline trailing
   comments below - sysctl treats everything after '=' as the value, so a trailing
