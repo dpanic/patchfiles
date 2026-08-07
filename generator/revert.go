@@ -70,7 +70,15 @@ func (generator *Generator) writeRevert(p *parser.Result) (err error) {
 
 	command := ""
 	if writeMode == ">" {
-		command = fmt.Sprintf("mv %s.oldpatchfile %s", p.Patch.Output, p.Patch.Output)
+		// Missing backup means we never replaced anything. Removing the file is right only
+		// for patches that created it; for the rest, deleting would destroy a file the host
+		// came with (sshd_config, limits.conf), so leave it and say so.
+		fallback := fmt.Sprintf("echo \"no backup for %s, leaving it alone\"", p.Patch.Output)
+		if p.Patch.CreatesFile {
+			fallback = fmt.Sprintf("rm -f %s", p.Patch.Output)
+		}
+		command = fmt.Sprintf("if [ -f %s.oldpatchfile ]; then mv %s.oldpatchfile %s; else %s; fi",
+			p.Patch.Output, p.Patch.Output, p.Patch.Output, fallback)
 	} else {
 		command += fmt.Sprintf("sed -i -e '/%s/,/%s/c\\' %s", start, end, p.Patch.Output)
 	}

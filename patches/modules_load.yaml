@@ -3,12 +3,17 @@ categories:
   - networking
   - performance
 mode: overwrite
+createsFile: true
 commentCharacter: "#"
 commandsAfter:
   - modprobe tcp_bbr 2>/dev/null || true
   - modprobe nf_conntrack 2>/dev/null || true
-description:
-  Load + persist tcp_bbr and nf_conntrack. bbr congestion control (net.ipv4.tcp_congestion_control) and the net.netfilter.nf_conntrack_* tunings in sysctl.conf are backed by these loadable modules; on Ubuntu 26.04 / kernel 7.0 they are not auto-loaded, so without this the settings silently fail to apply. systemd-modules-load reads this file at boot before systemd-sysctl; revert removes it.
+description: >-
+  Load + persist tcp_bbr and nf_conntrack. bbr congestion control
+  (net.ipv4.tcp_congestion_control) and the net.netfilter.nf_conntrack_* tunings in
+  /etc/sysctl.d/90-patchfiles.conf are backed by these loadable modules; on Ubuntu 26.04 /
+  kernel 7.0 they are not auto-loaded, so without this the settings silently fail to apply.
+  systemd-modules-load reads this file at boot before systemd-sysctl; revert removes it.
 body: |
   tcp_bbr
   nf_conntrack
