@@ -23,6 +23,7 @@ type PatchItem struct {
 	Output           string   // Target file path where patch will be applied
 	Categories       []string // List of categories this patch belongs to
 	CategoriesIfCase string   // Generated if-case string for category matching
+	BackupCommand    string   // Command backing up the original file, run before the write
 	CommandsAfter    []string // Commands to execute after applying the patch
 }
 
@@ -65,7 +66,8 @@ const (
 		{{ end }}
 		
 		if [ "$SKIP_PATCH" -eq 0 ]; then
-			echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
+			{{ if .BackupCommand }}{{.BackupCommand}}
+			{{ end }}echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
 
 			{{ range $command := .CommandsAfter }}
 				{{$command}}
@@ -102,11 +104,13 @@ func (generator *Generator) writePatch(p *parser.Result) (err error) {
 	// write mode
 	commandsAfter := p.Patch.CommandsAfter
 	writeMode := ">"
+	backupCommand := ""
 	if p.Patch.Mode == "append" {
 		writeMode = ">>"
 	} else {
-		command := fmt.Sprintf("cp -r %s %s.oldpatchfile", p.Patch.Output, p.Patch.Output)
-		commandsAfter = append(commandsAfter, command)
+		// Backup must run before the write. Appending it to commandsAfter copied the
+		// already-overwritten file, so revert restored the patch instead of the original.
+		backupCommand = fmt.Sprintf("[ -f %s ] && cp -a %s %s.oldpatchfile", p.Patch.Output, p.Patch.Output, p.Patch.Output)
 	}
 
 	// prepare categories if case
@@ -136,6 +140,7 @@ func (generator *Generator) writePatch(p *parser.Result) (err error) {
 		WriteMode:        writeMode,
 		Output:           p.Patch.Output,
 		Payload:          payload,
+		BackupCommand:    backupCommand,
 		CommandsAfter:    commandsAfter,
 		Categories:       p.Patch.Categories,
 		CategoriesIfCase: categoriesIfCase,
