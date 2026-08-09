@@ -56,11 +56,3 @@ bash <(curl -L -Ss https://github.com/dpanic/patchfiles/releases/latest/download
 * ~~implement patch by file name~~ ✅
 * ~~implement revert by file name~~ ✅
 * ~~implement help page~~ ✅
-
-* implement github ci/cd % 
-    * docker % 
-    * hooks % 
-    * generate output patchfiles.sh file on every push to main/dev % 
-
-References:
-* https://github.com/ncipollo/release-action
