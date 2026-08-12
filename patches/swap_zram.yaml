@@ -60,6 +60,21 @@ commandsAfter:
       echo "WARNING: no zram on this host - removing 91-zram.conf so vm.swappiness stays at the kernel default"
       rm -f /etc/sysctl.d/91-zram.conf
     fi
+  - |
+    # swappiness=100 is right while zram genuinely extends memory - an 8-16 GB host.
+    # Past ~32 GB it only churns: on a 61 GiB desktop it pushed 46 GiB out and had to drag
+    # 27 GiB back in over two days, while 39 GiB was never allocated. More than half the
+    # compression work was wasted. Keep zram as the valve, stop making it the default
+    # destination. RAM_GB rounds up, so a 32 GB host reporting 31.2 GiB still counts.
+    if [ -f /etc/sysctl.d/91-zram.conf ]; then
+      MEM_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+      RAM_GB=$(awk "BEGIN {g = $MEM_KB / 1024 / 1024; print (g == int(g)) ? int(g) : int(g) + 1}")
+      [ "$RAM_GB" -lt 1 ] && RAM_GB=1
+      if [ "$RAM_GB" -ge 32 ]; then
+        echo "host has ${RAM_GB} GB RAM, lowering vm.swappiness to 10"
+        sed -i 's/^vm\.swappiness = .*/vm.swappiness = 10/' /etc/sysctl.d/91-zram.conf
+      fi
+    fi
   - sysctl --system >/dev/null
 description: >-
   zram-first swap tuning plus the swap topology itself. vm.swappiness=100 is only correct
@@ -67,13 +82,17 @@ description: >-
   alongside the zram setup rather than in sysctl.yaml. Sorts after 90-patchfiles.conf so it
   wins. Creates the two-tier layout - zram at priority 100 for speed, a disk file at the
   default priority as the overflow that can actually release RAM. Idempotent, so a host
-  that already has swap in fstab is left untouched.
+  that already has swap in fstab is left untouched. swappiness is scaled by RAM: 100 while
+  zram genuinely extends memory, lowered to 10 from 32 GB up, where an eager swappiness
+  only pushes pages out and drags them straight back in.
 body: |
   # Managed by dpanic/patchfiles - patches/swap_zram.yaml. Do not edit by hand.
   # Only correct on hosts with zram (see /etc/systemd/zram-generator.conf).
 
-  # Favour compressing cold anon pages into zram over evicting page cache.
-  # The old value of 1 is spinning-disk advice and leaves zram unused.
+  # Starting point: favour compressing cold anon pages into zram over evicting page
+  # cache. The old value of 1 is spinning-disk advice and leaves zram unused.
+  # commandsAfter lowers this to 10 on hosts with >= 32 GB RAM, where zram no longer
+  # extends memory and swapping this eagerly only burns compression work.
   vm.swappiness = 100
 
   # zram has no seek penalty, so the default readahead of 2^3 = 8 pages just burns
