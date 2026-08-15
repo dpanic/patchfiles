@@ -114,8 +114,8 @@ body: |
   net.ipv4.tcp_low_latency = 1
 
   # Connection tracking
-  # Note: net.netfilter.nf_conntrack_max is overridden dynamically by autotune.yaml based on RAM
-  net.netfilter.nf_conntrack_max = 2097152
+  # nf_conntrack_max: owned solely by autotune.yaml (RAM_GB * 65536) -- a static value
+  # here raced it at boot and left each site with a different ceiling
 
   # Aggressive nf_conntrack cleanup to reduce connection tracking table size
   # CRITICAL: Established timeout reduced from default 5 days (432000s) to 10 minutes
@@ -138,8 +138,7 @@ body: |
   # Unacknowledged connection timeout
   net.netfilter.nf_conntrack_tcp_timeout_unacknowledged = 300
 
-  # Note: net.ipv4.tcp_max_tw_buckets is overridden dynamically by autotune.yaml based on RAM
-  net.ipv4.tcp_max_tw_buckets = 2097152
+  # tcp_max_tw_buckets: owned solely by autotune.yaml (RAM_GB * 65536)
 
   # FIN and TIME_WAIT handling
   # Slightly more conservative
