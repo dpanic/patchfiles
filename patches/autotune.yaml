@@ -39,9 +39,12 @@ commandsAfter:
     
     # Reload systemd and enable service
     systemctl daemon-reload
-    systemctl enable autotune.service
+    # --now, not bare enable: the RAM-derived ceilings and the NET_RX defaults only
+    # land at the next reboot otherwise, while sysctl.yaml has already applied the
+    # static file. That gap is why hosts kept conntrack at 8192 for months.
+    systemctl enable --now autotune.service
 description:
-  configure conntrack_max, tcp_max_tw_buckets, and fs.file-max dynamically based on available RAM. creates script in /usr/bin/autotune.sh and creates systemd service that runs after sysctl.conf is loaded to ensure dynamic values override static ones.
+  configure conntrack_max, tcp_max_tw_buckets, and fs.file-max dynamically based on available RAM, and restore the kernel NET_RX defaults (net.core.netdev_budget{,_usecs}) whose correct value depends on CONFIG_HZ. creates script in /usr/bin/autotune.sh and creates systemd service that runs after sysctl.conf is loaded to ensure dynamic values override static ones.
 body: |
   #!/usr/bin/env bash
 
@@ -142,6 +145,43 @@ body: |
       sysctl -w "$FILE_MAX_KEY=$FILE_MAX_TARGET" >/dev/null
   else
       echo "$FILE_MAX_KEY already $FILE_MAX_CURRENT, nothing to do."
+  fi
+  # ============================================================================
+  # SECTION: Restore the NET_RX softirq defaults
+  # ============================================================================
+  # sysctl.yaml used to ship netdev_budget=30000 / netdev_budget_usecs=6000.
+  # The budget could never bind -- net_rx_action() drains at most (NAPI instances
+  # on that CPU) * NAPI_POLL_WEIGHT(64) packets per round, so a typical host tops
+  # out at 128 and would need 469 NAPI instances for 30000 to matter.
+  # The usecs value is the one that bit: it bounds how long one NET_RX round holds
+  # a CPU with preemption disabled. The kernel default is 2 * USEC_PER_SEC / HZ, so
+  # 6000 was a 3x longer window at HZ=1000 and BELOW the default at HZ=250, where
+  # v6.14+ refuses it outright. That is why this is computed here and not a static
+  # line: removing the line does not reset a running host either.
+  NETDEV_HZ=$(awk -F= '/^CONFIG_HZ=[0-9]/{print $2; exit}' "/boot/config-$(uname -r)" 2>/dev/null)
+  if [ -z "$NETDEV_HZ" ]; then
+      NETDEV_HZ=$(zcat /proc/config.gz 2>/dev/null | awk -F= '/^CONFIG_HZ=[0-9]/{print $2; exit}')
+  fi
+  # Unknown -> assume the finest tick. Guessing high can only produce a write the
+  # kernel refuses, leaving its own default. Guessing low installs a real window.
+  case "$NETDEV_HZ" in ''|*[!0-9]*) NETDEV_HZ=1000 ;; esac
+  NETDEV_USECS=$(( 2 * 1000000 / NETDEV_HZ ))
+
+  NETDEV_BUDGET_CURRENT=$(sysctl -n net.core.netdev_budget 2>/dev/null || echo 0)
+  if [ "$NETDEV_BUDGET_CURRENT" -ne 300 ]; then
+      echo "Setting net.core.netdev_budget=300 (kernel default, was=$NETDEV_BUDGET_CURRENT)"
+      sysctl -w net.core.netdev_budget=300 >/dev/null
+  else
+      echo "net.core.netdev_budget already 300, nothing to do."
+  fi
+
+  NETDEV_USECS_CURRENT=$(sysctl -n net.core.netdev_budget_usecs 2>/dev/null || echo 0)
+  if [ "$NETDEV_USECS_CURRENT" -ne "$NETDEV_USECS" ]; then
+      echo "Setting net.core.netdev_budget_usecs=$NETDEV_USECS (2 jiffies at HZ=$NETDEV_HZ, was=$NETDEV_USECS_CURRENT)"
+      sysctl -w "net.core.netdev_budget_usecs=$NETDEV_USECS" >/dev/null 2>&1 || \
+          echo "Warning: kernel refused netdev_budget_usecs=$NETDEV_USECS; left at $NETDEV_USECS_CURRENT"
+  else
+      echo "net.core.netdev_budget_usecs already $NETDEV_USECS_CURRENT, nothing to do."
   fi
   # ============================================================================
   # SECTION: Maximize NIC ring buffers
