@@ -68,8 +68,18 @@ body: |
   # Network ingress performance
   net.core.somaxconn = 65535
   net.core.netdev_max_backlog = 30000
-  net.core.netdev_budget = 30000
-  net.core.netdev_budget_usecs = 6000
+
+  # netdev_budget / netdev_budget_usecs: deliberately unset -- autotune.yaml owns them
+  # and restores the kernel defaults. Neither belongs in a static file.
+  # netdev_budget was 30000 and could never bind: net_rx_action() processes at most
+  # (NAPI instances on that CPU) * NAPI_POLL_WEIGHT(64) packets per round, so a typical
+  # host tops out at 128 -- 30000 needs 469 NAPI instances on one core, and even the
+  # kernel default of 300 needs 5.
+  # netdev_budget_usecs was 6000, and that one is real: it bounds how long one NET_RX
+  # round holds a CPU with preemption disabled. The kernel default is
+  # 2 * USEC_PER_SEC / HZ, so this was a 3x longer window on every HZ=1000 host and is
+  # below the default at HZ=250 -- which since v6.14 the kernel refuses outright.
+  # A value derived from HZ cannot be a static line.
 
   # General network performance
   net.core.busy_poll = 0
