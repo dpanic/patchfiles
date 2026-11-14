@@ -1,0 +1,38 @@
+output: /usr/local/sbin/rps-spread
+categories:
+  - networking
+  - performance
+mode: overwrite
+createsFile: true
+commentCharacter: "#"
+commandsAfter:
+  - chmod 755 /usr/local/sbin/rps-spread
+  - /usr/local/sbin/rps-spread
+description: >-
+  Spread the RX packet processing (RPS) of single-queue NICs over every CPU. A virtio NIC
+  without multiqueue has one RX queue, so one CPU handles every incoming packet; under load its
+  backlog overflows (per-CPU drops in /proc/net/softnet_stat) and connections stall. Multi-queue
+  NICs keep their hardware RSS. Applied now, and at boot and on NIC hotplug by
+  /etc/udev/rules.d/90-rps-spread.rules (rps_spread_udev, same category). Revert removes the
+  file; the mask in effect stays until the next boot. Run both with `bash patch.sh rps`.
+body: |-
+  #!/bin/sh
+  # rps-spread - single-queue NICs: spread RX packet processing (RPS) over every CPU; multi-queue NICs keep RSS.
+  # Run by the udev rule 90-rps-spread.rules on every network device add; always exits 0.
+  n=${RPS_NCPU:-$(getconf _NPROCESSORS_CONF 2>/dev/null || nproc 2>/dev/null || echo 1)}
+  [ "${n:-1}" -gt 1 ] 2>/dev/null || exit 0
+  mask=""; left=$n
+  while [ "$left" -gt 0 ]; do
+    if [ "$left" -ge 32 ]; then g=ffffffff; left=$((left - 32)); else g=$(printf '%x' $(( (1 << left) - 1 ))); left=0; fi
+    mask="$g${mask:+,$mask}"
+  done
+  want=$(echo "$mask" | tr -d , | sed 's/^0*//')
+  for d in "${RPS_SYSNET:-/sys/class/net}"/*; do
+    [ -e "$d/device" ] || continue
+    set -- "$d"/queues/rx-*
+    [ "$#" -eq 1 ] && [ -e "$1/rps_cpus" ] || continue
+    cur=$(tr -d , < "$1/rps_cpus" | sed 's/^0*//')
+    [ "$cur" = "$want" ] && continue
+    echo "$mask" > "$1/rps_cpus" 2>/dev/null || echo "rps-spread: ${d##*/}: kernel refused mask $mask" >&2
+  done
+  exit 0

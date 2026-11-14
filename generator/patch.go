@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"path"
 	"strings"
 	"text/template"
 
@@ -21,6 +22,7 @@ type PatchItem struct {
 	Payload          string   // Base64-encoded payload to write to target file
 	WriteMode        string   // Bash write mode: ">" for overwrite, ">>" for append
 	Output           string   // Target file path where patch will be applied
+	OutputDir        string   // Parent directory of Output, created before the write
 	Categories       []string // List of categories this patch belongs to
 	CategoriesIfCase string   // Generated if-case string for category matching
 	BackupCommand    string   // Command backing up the original file, run before the write
@@ -66,6 +68,8 @@ const (
 		{{ end }}
 		
 		if [ "$SKIP_PATCH" -eq 0 ]; then
+			# The target directory may not exist yet (e.g. no udev in a container).
+			mkdir -p "{{.OutputDir}}"
 			{{ if .BackupCommand }}{{.BackupCommand}}
 			{{ end }}echo "{{.Payload}}" | base64 -d - {{.WriteMode}} {{.Output}}
 
@@ -139,6 +143,7 @@ func (generator *Generator) writePatch(p *parser.Result) (err error) {
 		Body:             bodyCommented,
 		WriteMode:        writeMode,
 		Output:           p.Patch.Output,
+		OutputDir:        path.Dir(p.Patch.Output),
 		Payload:          payload,
 		BackupCommand:    backupCommand,
 		CommandsAfter:    commandsAfter,

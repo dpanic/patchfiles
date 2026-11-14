@@ -1,0 +1,15 @@
+output: /etc/udev/rules.d/90-rps-spread.rules
+categories:
+  - networking
+  - performance
+mode: overwrite
+createsFile: true
+commentCharacter: "#"
+commandsAfter:
+  - udevadm control --reload-rules 2>/dev/null || true
+description: >-
+  udev rule that runs /usr/local/sbin/rps-spread (rps_spread.yaml) on every network device add, so
+  RPS is set again at boot (coldplug) and when a NIC is hot-plugged. Revert removes it.
+body: |-
+  # 90-rps-spread.rules - RPS for single-queue NICs at boot (coldplug) and on hotplug; see /usr/local/sbin/rps-spread.
+  ACTION=="add", SUBSYSTEM=="net", RUN+="/usr/local/sbin/rps-spread"
