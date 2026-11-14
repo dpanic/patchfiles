@@ -26,15 +26,16 @@ const (
 	args=("$@")
 	category="${args[0]}"
 
+	# Only "all" honours the marker; each patch guards itself, so a named category can re-run.
 	{{ if eq .ScriptFor "PATCHING" }}
-		if test -f "{{.PatchFilesControlFile}}"; then
+		if [[ "$category" == "all" ]] && test -f "{{.PatchFilesControlFile}}"; then
 			echo "System already patched exiting"
 			exit 0
 		fi
 	{{ end }}	
 
 	{{ if eq .ScriptFor "REVERTING" }}
-		if test ! -f "{{.PatchFilesControlFile}}"; then
+		if [[ "$category" == "all" ]] && test ! -f "{{.PatchFilesControlFile}}"; then
 			echo "System is not patched. Exiting."
 			exit 0
 		fi
