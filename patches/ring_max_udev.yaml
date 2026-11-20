@@ -1,0 +1,17 @@
+output: /etc/udev/rules.d/70-ring-max.rules
+categories:
+  - networking
+  - performance
+mode: overwrite
+createsFile: true
+commentCharacter: "#"
+commandsAfter:
+  - udevadm control --reload-rules 2>/dev/null || true
+description: >-
+  udev rule that runs /usr/local/sbin/ring-max (ring_max.yaml) for every network device add, so
+  the rings are raised at boot (coldplug) and when a NIC is hot-plugged, while the NIC is still
+  down. Revert removes it.
+body: |-
+  # 70-ring-max.rules - NIC rings to the hardware maximum when the device appears (boot, hotplug); see /usr/local/sbin/ring-max.
+  # Sorted before 80-ifupdown.rules: it runs before anything brings the NIC up, so no link is reset.
+  ACTION=="add", SUBSYSTEM=="net", RUN+="/usr/local/sbin/ring-max $name"

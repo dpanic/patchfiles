@@ -1,0 +1,55 @@
+output: /usr/local/sbin/ring-max
+categories:
+  - networking
+  - performance
+mode: overwrite
+createsFile: true
+commentCharacter: "#"
+commandsAfter:
+  # Guarded with -e/-x: revert.sh runs these too, after it removed the file.
+  - '[ -e /usr/local/sbin/ring-max ] && chmod 755 /usr/local/sbin/ring-max'
+  - |
+    # ring-max does nothing without ethtool, and a minimal Debian ships without it.
+    if [ -x /usr/local/sbin/ring-max ] && ! command -v ethtool >/dev/null 2>&1; then
+      echo "ethtool missing, installing"
+      (apt-get update -qq && apt-get install -y -qq ethtool) >/dev/null 2>&1 || true
+    fi
+  - '[ -x /usr/local/sbin/ring-max ] && /usr/local/sbin/ring-max'
+description: >-
+  Raise NIC RX/TX rings to the hardware maximum. At the driver default (256 on igb/e1000e, 1024 on
+  vmxnet3) a burst overflows the ring and the NIC drops packets (rx_missed_errors). The script
+  changes a NIC only while it is down, because a ring change on a running NIC resets its link.
+  /etc/udev/rules.d/70-ring-max.rules (ring_max_udev, same category) runs it when the NIC appears,
+  before the network is brought up, so the rings are in place from the first packet of every boot
+  and after a hotplug. A NIC that is already running when the patch is applied gets its rings at
+  the next boot, or at once with `ring-max --live <nic>` (resets the link). autotune used to do
+  this at boot, but only for NICs that were already up when it ran. Revert removes the file; the
+  rings in effect stay until the next boot. Run both with `bash patch.sh ring`.
+body: |-
+  #!/bin/sh
+  # ring-max - raise NIC RX/TX rings to the hardware maximum while the NIC is down; a running NIC is left alone,
+  # because a ring change resets its link. Run per NIC by the udev rule 70-ring-max.rules on device add; always exits 0.
+  # ring-max [--live] [nic...]: no nic = every hardware NIC; --live also changes running NICs (link reset).
+  PATH=$PATH:/usr/sbin:/sbin
+  live=0
+  [ "${1:-}" = --live ] && { live=1; shift; }
+  et=${RING_ETHTOOL:-ethtool}
+  command -v "$et" >/dev/null 2>&1 || exit 0
+  sys=${RING_SYSNET:-/sys/class/net}
+  [ "$#" -gt 0 ] || { cd "$sys" 2>/dev/null || exit 0; set -- *; }
+  for n in "$@"; do
+    [ -e "$sys/$n/device" ] || continue
+    want=$("$et" -g "$n" 2>/dev/null | awk '
+      /^Pre-set/ { s = 1; next } /^Current/ { s = 2; next }
+      $1 == "RX:" || $1 == "TX:" { v[s, $1] = $2 }
+      END { n = split("RX: TX:", k, " "); for (i = 1; i <= n; i++) { m = v[1, k[i]]; c = v[2, k[i]]
+        if (m ~ /^[0-9]+$/ && c ~ /^[0-9]+$/ && c + 0 < m + 0) printf " %s %s", tolower(substr(k[i], 1, 2)), m } }')
+    [ -n "$want" ] || continue
+    if [ "$live" = 0 ]; then
+      f=0; read -r f 2>/dev/null < "$sys/$n/flags"
+      [ $(( ${f:-0} & 1 )) -eq 0 ] || { echo "ring-max: $n is up, left alone; wanted$want (applies at boot, or: ring-max --live $n)" >&2; continue; }
+    fi
+    # shellcheck disable=SC2086 # $want is "rx N tx N"
+    "$et" -G "$n" $want 2>/dev/null || echo "ring-max: $n: driver refused$want" >&2
+  done
+  exit 0
