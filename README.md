@@ -14,6 +14,7 @@ Patchfiles implements various config scripts into one single bash file which you
 * sshd secure server
 * tune initial window size
 * RPS for single-queue NICs: incoming packets spread over all CPUs (`bash patch.sh rps`)
+* NIC rings at the hardware maximum from boot on, without resetting a running link (`bash patch.sh ring`)
 
 System automatically builds revert.sh script, whcih can bu run in order to revert back changes.
 
